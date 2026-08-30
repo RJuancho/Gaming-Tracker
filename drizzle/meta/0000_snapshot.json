@@ -1,0 +1,243 @@
+{
+  "id": "ab57186a-3fbb-4b31-b404-29710bcdd448",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.riot_accounts": {
+      "name": "riot_accounts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "riot_accounts_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "puuid": {
+          "name": "puuid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "game_name": {
+          "name": "game_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_line": {
+          "name": "tag_line",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platform": {
+          "name": "platform",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "riot_accounts_puuid_unique": {
+          "name": "riot_accounts_puuid_unique",
+          "columns": [
+            {
+              "expression": "puuid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tft_rank_snapshots": {
+      "name": "tft_rank_snapshots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "tft_rank_snapshots_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "riot_account_id": {
+          "name": "riot_account_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "queue_type": {
+          "name": "queue_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tier": {
+          "name": "tier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "division": {
+          "name": "division",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "league_points": {
+          "name": "league_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wins": {
+          "name": "wins",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "losses": {
+          "name": "losses",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "captured_at": {
+          "name": "captured_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "tft_rank_snapshots_account_queue_captured_idx": {
+          "name": "tft_rank_snapshots_account_queue_captured_idx",
+          "columns": [
+            {
+              "expression": "riot_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "queue_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "captured_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tft_rank_snapshots_riot_account_id_riot_accounts_id_fk": {
+          "name": "tft_rank_snapshots_riot_account_id_riot_accounts_id_fk",
+          "tableFrom": "tft_rank_snapshots",
+          "tableTo": "riot_accounts",
+          "columnsFrom": [
+            "riot_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "tft_rank_snapshots_status_check": {
+          "name": "tft_rank_snapshots_status_check",
+          "value": "\"tft_rank_snapshots\".\"status\" in ('placements', 'ranked')"
+        },
+        "tft_rank_snapshots_rank_fields_check": {
+          "name": "tft_rank_snapshots_rank_fields_check",
+          "value": "(\n        \"tft_rank_snapshots\".\"status\" = 'placements'\n        and \"tft_rank_snapshots\".\"tier\" is null\n        and \"tft_rank_snapshots\".\"division\" is null\n        and \"tft_rank_snapshots\".\"league_points\" is null\n        and \"tft_rank_snapshots\".\"wins\" is null\n        and \"tft_rank_snapshots\".\"losses\" is null\n      ) or (\n        \"tft_rank_snapshots\".\"status\" = 'ranked'\n        and \"tft_rank_snapshots\".\"tier\" is not null\n        and \"tft_rank_snapshots\".\"division\" is not null\n        and \"tft_rank_snapshots\".\"league_points\" is not null\n        and \"tft_rank_snapshots\".\"wins\" is not null\n        and \"tft_rank_snapshots\".\"losses\" is not null\n      )"
+        },
+        "tft_rank_snapshots_nonnegative_values_check": {
+          "name": "tft_rank_snapshots_nonnegative_values_check",
+          "value": "coalesce(\"tft_rank_snapshots\".\"league_points\", 0) >= 0\n        and coalesce(\"tft_rank_snapshots\".\"wins\", 0) >= 0\n        and coalesce(\"tft_rank_snapshots\".\"losses\", 0) >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

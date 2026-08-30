@@ -1,0 +1,41 @@
+{
+  "matchId": "SG2_172194008",
+  "dataVersion": "6",
+  "playedAt": "2026-08-30T07:28:42.316Z",
+  "durationSeconds": 2481.198486328125,
+  "gameVersion": null,
+  "queueId": 1100,
+  "setCoreName": "TFTSet18",
+  "setNumber": 18,
+  "participant": {
+    "placement": 2,
+    "level": 9,
+    "lastRound": 38,
+    "goldLeft": 6,
+    "playersEliminated": null,
+    "damageToPlayers": null,
+    "activeTraits": [
+      "DA_18_Blossom",
+      "DA_18_Brawler",
+      "DA_18_Greenfather",
+      "DA_18_Invoker",
+      "DA_Riftbeast18",
+      "DA_18_Spellweaver",
+      "DA_18_Vanguard",
+      "DA_Emerald18"
+    ],
+    "units": [
+      { "id": "DA_Karma18", "tier": 2, "items": [] },
+      { "id": "DA_Krug18", "tier": 3, "items": ["DA_GargoyleStoneplate", "DA_SpiritVisage", "DA_SteadfastHeart"] },
+      { "id": "DA_18_Sentry", "tier": 2, "items": [] },
+      { "id": "DA_18_Morgana", "tier": 2, "items": ["DA_Morellonomicon", "DA_NashorsTooth", "DA_VoidStaff"] },
+      { "id": "DA_18_Ahri", "tier": 2, "items": ["DA_SpearOfShojin", "DA_StrikersFlail", "DA_JeweledGauntlet"] },
+      { "id": "DA_18_Ivern", "tier": 2, "items": ["DA_BlueBuff", "DA_NashorsTooth"] },
+      { "id": "DA_18_Sett", "tier": 2, "items": [] },
+      { "id": "DA_Sentinel18", "tier": 2, "items": ["DA_SteadfastHeart"] },
+      { "id": "DA_Taric18", "tier": 1, "items": ["DA_DragonsClaw", "DA_Crownguard"] }
+    ]
+  },
+  "privacy": "All PUUIDs, Riot IDs, and other participants were removed. Zero-valued Unreal fields were normalized to null."
+}
+
