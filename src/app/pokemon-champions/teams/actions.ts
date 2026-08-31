@@ -18,10 +18,6 @@ import {
 } from "@/services/pokemon-teams";
 
 export async function createSnorlaxTeam(formData: FormData) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Team editing requires authentication before deployment.");
-  }
-
   const input = createStarterTeamSchema.parse({
     name: formData.get("name"),
     format: formData.get("format"),
@@ -34,10 +30,6 @@ export async function createSnorlaxTeam(formData: FormData) {
 }
 
 export async function addTeamMember(formData: FormData) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Team editing requires authentication before deployment.");
-  }
-
   const input = addTeamMemberSchema.safeParse({
     teamId: formData.get("teamId"),
     pokemonId: formData.get("pokemonId"),
@@ -66,10 +58,6 @@ export async function addTeamMember(formData: FormData) {
 }
 
 export async function editTeam(formData: FormData) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Team editing requires authentication before deployment.");
-  }
-
   const input = updateTeamSchema.safeParse({
     teamId: formData.get("teamId"),
     name: formData.get("name"),
@@ -96,9 +84,6 @@ export async function editTeam(formData: FormData) {
 }
 
 export async function changeTeamMember(formData: FormData) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Team editing requires authentication before deployment.");
-  }
   const input = changeTeamMemberSchema.safeParse({
     teamId: formData.get("teamId"),
     memberId: formData.get("memberId"),
@@ -116,10 +101,6 @@ export async function changeTeamMember(formData: FormData) {
 }
 
 export async function deleteTeam(formData: FormData) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Team editing requires authentication before deployment.");
-  }
-
   const input = deleteTeamSchema.safeParse({
     teamId: formData.get("teamId"),
   });
@@ -143,10 +124,6 @@ export async function deleteTeam(formData: FormData) {
 }
 
 export async function savePokemonBuild(formData: FormData) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Team editing requires authentication before deployment.");
-  }
-
   const input = updatePokemonBuildSchema.safeParse({
     teamId: formData.get("teamId"),
     memberId: formData.get("memberId"),
