@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import { getPokemonItemSpriteUrl, getPokemonSpriteUrl } from "@/integrations/pokemon/assets";
+import { getPokemonFormSlug, getPokemonItemSpriteUrl, getPokemonSpriteUrl } from "@/integrations/pokemon/assets";
 
 const POKEAPI_URL = "https://pokeapi.co";
 const pokemonIdSchema = z.string().regex(/^[a-z0-9-]+$/);
@@ -145,6 +145,11 @@ function getPokeApiPokemonId(id: string) {
   const regionalMatch = id.match(/^(.*)(alola|galar|hisui|paldea)$/);
   if (regionalMatch) {
     return `${regionalMatch[1]}-${regionalMatch[2]}`;
+  }
+
+  const formSlug = getPokemonFormSlug(id);
+  if (formSlug !== id) {
+    return formSlug;
   }
 
   return id;

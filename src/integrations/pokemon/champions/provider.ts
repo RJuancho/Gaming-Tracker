@@ -161,8 +161,22 @@ export async function getChampionsPokemon(
   const url = new URL(`/api/pokemon/${id}`, CHAMPIONS_API_URL);
   url.searchParams.set("format", parsedFormat);
 
-  const payload = await fetchJson(url, 86_400);
+  let payload: unknown;
+  try {
+    payload = await fetchJson(url, 86_400);
+  } catch (error) {
+    if (isBasculegionId(id)) {
+      return getBasculegionFallback(id, parsedFormat);
+    }
+    throw error;
+  }
   const result = pokemonResponseSchema.parse(payload);
+
+  // Guard against the upstream service resolving an ambiguous legacy slug to
+  // an unrelated record. Never persist that record as a Basculegion member.
+  if (isBasculegionId(id) && !result.showdownId.toLowerCase().startsWith("basculegion")) {
+    return getBasculegionFallback(id, parsedFormat);
+  }
 
   return {
     name: result.name,
@@ -171,6 +185,27 @@ export async function getChampionsPokemon(
     season: result.requestedSeason,
     types: result.summary.types,
     baselineBattleStats: result.summary.baseStats,
+  };
+}
+
+function isBasculegionId(id: string) {
+  return id.startsWith("basculegion") || id.startsWith("baculegion");
+}
+
+function getBasculegionFallback(
+  id: string,
+  format: BattleFormat,
+): ChampionsPokemon {
+  const female = id.endsWith("f") || id.endsWith("female");
+  return {
+    name: female ? "Basculegion Female" : "Basculegion Male",
+    showdownId: female ? "basculegionf" : "basculegionm",
+    format,
+    season: "Current",
+    types: ["Water", "Ghost"],
+    baselineBattleStats: female
+      ? { hp: 120, attack: 92, defense: 65, sp_attack: 100, sp_defense: 75, speed: 78 }
+      : { hp: 120, attack: 112, defense: 65, sp_attack: 80, sp_defense: 75, speed: 78 },
   };
 }
 

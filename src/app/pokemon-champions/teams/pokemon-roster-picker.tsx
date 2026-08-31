@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 
 import type { ChampionsRosterPokemon } from "@/integrations/pokemon/champions/provider";
-import { getShowdownSpriteUrl } from "@/integrations/pokemon/assets";
+import { getPokemonFormSlug, getShowdownSpriteUrl } from "@/integrations/pokemon/assets";
 
 import { addTeamMember } from "./actions";
 import { getPokemonTypeColor } from "./pokemon-type-color";
@@ -246,6 +246,7 @@ function spriteCandidates(pokemonId: string, name: string) {
   const formSlug = base
     .replace(/(alola|galar|hisui|paldea)$/, "-$1")
     .replace(/(forme)$/, "-$1");
+  const hyphenatedFormSlug = getPokemonFormSlug(base);
   const baseSpecies = base.replace(/(alola|galar|hisui|paldea|forme|f)$/, "");
-  return [...new Set([base, formSlug, displaySlug, baseSpecies])];
+  return [...new Set([base, formSlug, hyphenatedFormSlug, displaySlug, baseSpecies])];
 }
