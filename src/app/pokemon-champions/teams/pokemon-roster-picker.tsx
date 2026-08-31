@@ -147,7 +147,10 @@ export function PokemonRosterPicker({
                 </span>
               </div>
 
-              <div className="mt-3 max-h-[45vh] overflow-y-auto rounded-xl border border-white/10 bg-slate-950/60">
+              <fieldset
+                aria-label="Choose a Pokémon to add"
+                className="mt-3 max-h-[45vh] overflow-y-auto rounded-xl border border-white/10 bg-slate-950/60"
+              >
                 {availableRoster.length === 0 ? (
                   <p className="p-5 text-center text-sm text-slate-500">
                     No current roster match.
@@ -161,41 +164,43 @@ export function PokemonRosterPicker({
                       const rosterId = normalize(pokemon.pokemonId);
                       return candidate === rosterName || candidate === rosterId || candidate.includes(rosterName) || rosterName.includes(candidate) || candidate.includes(rosterId) || rosterId.includes(candidate);
                     });
+                    const isSelected = selectedPokemon === pokemon.pokemonId;
                     return (
-                    <label
-                      key={pokemon.pokemonId}
-                      className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-white/[0.06] px-3 py-2.5 text-sm last:border-b-0 hover:bg-violet-300/[0.06]"
-                    >
-                      <RosterSprite pokemonId={pokemon.pokemonId} name={pokemon.name} />
-                        <input
-                          type="radio"
-                        name="pokemonId"
-                        value={pokemon.pokemonId}
-                          required
-                          onChange={() => setSelectedPokemon(pokemon.pokemonId)}
-                        className="accent-violet-300"
-                      />
-                      <span className="truncate font-medium text-slate-200">
-                        {pokemon.name}
-                      </span>
-                      {isSynergy ? <span className="text-[9px] uppercase tracking-wide text-emerald-300">Synergy</span> : null}
-                      <span className="flex flex-wrap justify-end gap-1">
-                        {pokemon.types.map((type) => (
-                          <span
-                            key={type}
-                            className={`rounded-md border border-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase ${getPokemonTypeColor(
-                              type,
-                            )}`}
-                          >
-                            {type}
+                      <label
+                        key={pokemon.pokemonId}
+                        className={`grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-white/[0.06] px-3 py-2.5 text-sm transition last:border-b-0 hover:bg-violet-300/[0.06] focus-within:bg-violet-300/[0.08] ${isSelected ? "bg-violet-300/[0.1] ring-1 ring-inset ring-violet-300/50" : ""}`}
+                      >
+                        <RosterSprite pokemonId={pokemon.pokemonId} name={pokemon.name} />
+                        <span className="min-w-0">
+                          <span className="flex items-center gap-2">
+                            <span className="truncate font-medium text-slate-200">{pokemon.name}</span>
+                            {isSynergy ? <span className="shrink-0 text-[9px] uppercase tracking-wide text-emerald-300">Synergy</span> : null}
                           </span>
-                        ))}
-                      </span>
-                    </label>
+                          <span className="mt-1 flex flex-wrap gap-1">
+                            {pokemon.types.map((type) => (
+                              <span key={type} className={`rounded-md border border-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase ${getPokemonTypeColor(type)}`}>
+                                {type}
+                              </span>
+                            ))}
+                          </span>
+                        </span>
+                        <span className="grid size-6 place-items-center rounded-full border-2 border-slate-600 transition-colors has-[:checked]:border-violet-300 has-[:checked]:bg-violet-300/15">
+                          <input
+                            type="radio"
+                            name="pokemonId"
+                            value={pokemon.pokemonId}
+                            required
+                            checked={isSelected}
+                            onChange={() => setSelectedPokemon(pokemon.pokemonId)}
+                            className="peer sr-only"
+                          />
+                          <span aria-hidden="true" className="size-2.5 rounded-full bg-violet-300 opacity-0 transition-opacity peer-checked:opacity-100" />
+                        </span>
+                      </label>
                     );
                   })
                 )}
-              </div>
+              </fieldset>
 
               <label className="mt-4 block text-xs text-slate-400">
                 Intended role
@@ -215,7 +220,7 @@ export function PokemonRosterPicker({
                 </button>
                 <button
                   type="submit"
-                  disabled={availableRoster.length === 0}
+                  disabled={!selectedPokemon || availableRoster.length === 0}
                   className="rounded-xl bg-violet-300 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-violet-200 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Add selected Pokémon
