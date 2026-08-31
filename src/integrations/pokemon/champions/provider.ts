@@ -123,6 +123,15 @@ export type MetaSnapshot = {
   rankings: MetaRanking[];
 };
 
+export type ChampionsMetaCore = {
+  rank: number;
+  format: BattleFormat;
+  season: string;
+  source: string;
+  partnerRank: number;
+  members: Array<{ pokemonId: string; name: string; types: string[] }>;
+};
+
 export type ChampionsRosterPokemon = {
   name: string;
   pokemonId: string;
@@ -229,6 +238,84 @@ export async function getCurrentChampionsMeta(
   };
 }
 
+export async function getPopularChampionsCores(
+  format: BattleFormat,
+  anchorPokemonId?: string,
+): Promise<ChampionsMetaCore[]> {
+  const parsedFormat = battleFormatSchema.parse(format);
+  const roster = await getChampionsRoster(parsedFormat);
+  const responses = await Promise.allSettled(
+    roster.map((pokemon) => getCurrentChampionsMeta(pokemon.pokemonId, parsedFormat)),
+  );
+  const byId = new Map(roster.map((pokemon) => [normalizeRosterName(pokemon.pokemonId), pokemon]));
+  const cores = new Map<string, ChampionsMetaCore>();
+
+  responses.forEach((response) => {
+    if (response.status !== "fulfilled") return;
+    const anchor = byId.get(normalizeRosterName(response.value.showdownId));
+    if (!anchor) return;
+    response.value.rankings
+      .filter((ranking) => ranking.category === "teammate" && ranking.name)
+      .slice(0, 5)
+      .forEach((ranking) => {
+        const partner = findRosterPokemon(byId, ranking.name ?? "");
+        if (!partner || partner.pokemonId === anchor.pokemonId) return;
+        const ids = [anchor.pokemonId, partner.pokemonId].sort();
+        const key = ids.join("|");
+        if (!cores.has(key)) {
+          cores.set(key, {
+            rank: 0,
+            format: parsedFormat,
+            season: response.value.season,
+            source: response.value.source,
+            partnerRank: ranking.rank,
+            members: [anchor, partner].map((pokemon) => ({
+              pokemonId: pokemon.pokemonId,
+              name: pokemon.name,
+              types: pokemon.types,
+            })),
+          });
+        }
+      });
+  });
+
+  const normalizedAnchor = anchorPokemonId
+    ? normalizeRosterName(anchorPokemonId)
+    : undefined;
+
+  return [...cores.values()]
+    .filter((core) =>
+      !normalizedAnchor || core.members.some((member) =>
+        normalizeRosterName(member.pokemonId) === normalizedAnchor,
+      ),
+    )
+    .sort((left, right) => left.partnerRank - right.partnerRank)
+    .slice(0, 12)
+    .map((core, index) => ({ ...core, rank: index + 1 }));
+}
+
+function normalizeRosterName(value: string) {
+  return value.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
+}
+
+function findRosterPokemon(
+  roster: Map<string, ChampionsRosterPokemon>,
+  name: string,
+) {
+  const normalized = normalizeRosterName(name);
+  for (const [key, pokemon] of roster) {
+    if (
+      key === normalized ||
+      normalizeRosterName(pokemon.name) === normalized ||
+      key.includes(normalized) ||
+      normalized.includes(key)
+    ) {
+      return pokemon;
+    }
+  }
+  return undefined;
+}
+
 export async function getChampionsMetaHistory(
   pokemonId: string,
   format: BattleFormat,
@@ -274,7 +361,7 @@ function normalizeMetaRow(row: z.infer<typeof metaRowSchema>): MetaRanking {
   return {
     category: row.category,
     rank: row.rank,
-    name: row.name || null,
+    name: row.name ? normalizeMetaName(row.category, row.name) : null,
     percentage: row.percentage_value,
     statChange: hasStatChange
       ? {
@@ -293,6 +380,15 @@ function normalizeMetaRow(row: z.infer<typeof metaRowSchema>): MetaRanking {
         }
       : null,
   };
+}
+
+function normalizeMetaName(category: MetaCategory, name: string) {
+  // The upstream feed has occasionally split this item name across a space
+  // ("Tyra nitarite"), which breaks both its display label and PokéAPI slug.
+  if (category === "held_item" && /^tyra\s+nitarite$/i.test(name.trim())) {
+    return "Tyranitarite";
+  }
+  return name;
 }
 
 function toNumber(value: number | "" | undefined) {

@@ -1,15 +1,150 @@
 "use client";
+
 import Image from "next/image";
 import { useState } from "react";
 
-type Character = { avatarId: number; name: string | null; iconUrl: string | null; level: number | null; constellation: number | null; friendship: number | null; stats: Record<string, number>; equipment: Array<{ itemId: number; type: string; level: number | null; refinement: number | null }> };
-type Profile = { nickname: string | null; level: number | null; worldLevel: number | null; characters: Character[] };
+import type {
+  GenshinArtifact,
+  GenshinCharacterBuild,
+  GenshinDisplayStat,
+  GenshinProfile,
+  GenshinWeapon,
+} from "@/integrations/genshin/enka";
 
 export function GenshinProfileViewer() {
-  const [uid, setUid] = useState(""); const [profile, setProfile] = useState<Profile | null>(null); const [error, setError] = useState<string | null>(null); const [loading, setLoading] = useState(false);
-  async function load() { setLoading(true); setError(null); try { const response = await fetch(`/api/genshin/profile?uid=${uid}`); const payload = await response.json(); if (!response.ok) setError(payload.error ?? "Profile lookup failed."); else setProfile(payload); } catch { setError("Profile lookup failed. Check your connection and try again."); } finally { setLoading(false); } }
-  return <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-5 sm:p-7"><p className="font-mono text-xs uppercase tracking-[0.18em] text-violet-300">In-site builds</p><h2 className="mt-2 text-2xl font-semibold text-white">Showcase characters</h2><div className="mt-4 flex flex-col gap-3 sm:flex-row"><input inputMode="numeric" value={uid} onChange={(event) => setUid(event.target.value.replace(/\D/g, ""))} placeholder="Enter your 9-digit UID" className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white outline-none focus:border-violet-300/50" /><button type="button" onClick={load} disabled={loading || uid.length !== 9} className="rounded-xl bg-violet-300 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-violet-200 disabled:opacity-40">{loading ? "Loading…" : "Load builds"}</button></div>{error ? <p className="mt-4 rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 py-2 text-sm text-rose-100">{error}</p> : null}{profile ? <div className="mt-6"><h3 className="text-xl font-semibold text-white">{profile.nickname ?? "Genshin showcase"}</h3><p className="mt-1 text-xs text-slate-500">Adventure Rank {profile.level ?? "—"} · World Level {profile.worldLevel ?? "—"}</p><div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">{profile.characters.map((character, index) => <details key={character.avatarId} className="rounded-xl border border-white/[0.08] bg-slate-950/60 p-4"><summary className="flex cursor-pointer items-center gap-3"><span className="grid size-10 place-items-center overflow-hidden rounded-lg bg-violet-300/10">{character.iconUrl ? <Image src={character.iconUrl} alt="" width={40} height={40} className="size-10 object-cover" unoptimized /> : <span className="text-xs font-bold text-violet-200">{index + 1}</span>}</span><span className="font-semibold text-white">{character.name ?? `Showcase character ${index + 1}`}</span><span className="ml-auto text-xs text-violet-200">Lv. {character.level ?? "—"}</span></summary><p className="mt-2 text-[10px] text-slate-600">Internal avatar ID {character.avatarId}</p><p className="mt-3 text-xs text-slate-500">Constellation {character.constellation ?? 0} · Friendship {character.friendship ?? "—"}</p><div className="mt-3 flex flex-wrap gap-1.5">{Object.entries(character.stats).map(([key, value]) => <span key={key} className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] text-slate-300">{statLabel(key)}: {formatStatValue(key, value)}</span>)}</div><div className="mt-4 border-t border-white/[0.07] pt-3"><p className="text-[10px] uppercase tracking-wider text-slate-500">Equipment</p>{character.equipment.map((item) => <p key={`${item.type}-${item.itemId}`} className="mt-1 text-xs text-slate-300">{item.type} · level {item.level ?? "—"}{item.refinement ? ` · refinement ${item.refinement}` : ""}</p>)}</div></details>)}</div></div> : null}</section>;
+  const [uid, setUid] = useState("");
+  const [profile, setProfile] = useState<GenshinProfile | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/genshin/profile?uid=${uid}`);
+      const payload = await response.json();
+      if (!response.ok) setError(payload.error ?? "Profile lookup failed.");
+      else setProfile(payload);
+    } catch {
+      setError("Profile lookup failed. Check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-5 sm:p-7">
+      <p className="font-mono text-xs uppercase tracking-[0.18em] text-violet-300">In-site builds</p>
+      <h2 className="mt-2 text-2xl font-semibold text-white">Showcase characters</h2>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <input inputMode="numeric" value={uid} onChange={(event) => setUid(event.target.value.replace(/\D/g, ""))} placeholder="Enter your 9-digit UID" className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white outline-none focus:border-violet-300/50" />
+        <button type="button" onClick={load} disabled={loading || uid.length !== 9} className="rounded-xl bg-violet-300 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-violet-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400">
+          {loading ? "Loading…" : "Load builds"}
+        </button>
+      </div>
+      {error ? <p className="mt-4 rounded-lg border border-rose-300/20 bg-rose-300/10 px-3 py-2 text-sm text-rose-100">{error}</p> : null}
+      {profile ? (
+        <div className="mt-6">
+          <h3 className="text-xl font-semibold text-white">{profile.nickname ?? "Genshin showcase"}</h3>
+          <p className="mt-1 text-xs text-slate-500">Adventure Rank {profile.level ?? "—"} · World Level {profile.worldLevel ?? "—"}</p>
+          <div className="mt-4 space-y-4">
+            {profile.characters.map((character, index) => <CharacterCard key={character.avatarId} character={character} index={index} />)}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
-function statLabel(key: string) { const labels: Record<string, string> = { "1": "Base HP", "2": "HP", "3": "HP%", "4": "Base ATK", "5": "ATK", "6": "ATK%", "7": "Base DEF", "8": "DEF", "9": "DEF%", "10": "Base SPD", "11": "SPD%", "20": "Crit Rate", "22": "Crit DMG", "23": "Energy Recharge", "26": "Healing Bonus", "27": "Incoming Healing", "28": "Elemental Mastery", "29": "Physical RES", "30": "Physical DMG", "40": "Pyro DMG", "41": "Electro DMG", "42": "Hydro DMG", "43": "Dendro DMG", "44": "Anemo DMG", "45": "Geo DMG", "46": "Cryo DMG", "81": "Shield Strength", "2000": "Max HP", "2001": "ATK", "2002": "DEF" }; return labels[key] ?? `Combat stat ${key}`; }
-function formatStatValue(key: string, value: number) { const percentageKeys = new Set(["3", "6", "9", "11", "20", "22", "23", "26", "27", "29", "30", "40", "41", "42", "43", "44", "45", "46", "50", "51", "52", "53", "54", "55", "56", "81"]); return percentageKeys.has(key) ? `${(value * 100).toFixed(1)}%` : Math.round(value).toString(); }
+function CharacterCard({ character, index }: { character: GenshinCharacterBuild; index: number }) {
+  const setCounts = countArtifactSets(character.artifacts);
+  return (
+    <details className="group rounded-2xl border border-white/[0.08] bg-slate-950/60 p-4 sm:p-5">
+      <summary className="flex cursor-pointer list-none items-center gap-4 [&::-webkit-details-marker]:hidden">
+        <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-violet-300/10">
+          {character.iconUrl ? <CharacterImage src={character.iconUrl} name={character.name ?? "Character"} /> : <span className="font-bold text-violet-200">{index + 1}</span>}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-lg font-semibold text-white">{character.name ?? `Showcase character ${index + 1}`}</span>
+          <span className="mt-1 block text-xs text-slate-400">Level {character.level ?? "Unavailable"} · Constellation {character.constellation}{character.friendship !== null ? ` · Friendship ${character.friendship}` : ""}</span>
+        </span>
+        <span className="text-sm text-violet-200 transition group-open:rotate-180">⌄</span>
+      </summary>
+
+      <div className="mt-5 border-t border-white/[0.07] pt-5">
+        <SectionLabel>Key stats</SectionLabel>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          {character.keyStats.map((stat) => <StatTile key={stat.key} stat={stat} />)}
+        </div>
+        {character.detailedStats.length ? (
+          <details className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+            <summary className="cursor-pointer text-xs text-slate-400">Detailed stats</summary>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">{character.detailedStats.map((stat) => <StatTile key={stat.key} stat={stat} compact />)}</div>
+          </details>
+        ) : null}
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+          <SectionLabel>Artifacts</SectionLabel>
+          <div className="flex flex-wrap gap-1.5">{[...setCounts].filter(([, count]) => count >= 2).map(([name, count]) => <span key={name} className="rounded-full border border-amber-300/15 bg-amber-300/[0.05] px-2 py-1 text-[10px] text-amber-100">{name} · {count}-piece</span>)}</div>
+        </div>
+        {character.artifacts.length ? <div className="mt-3 grid gap-3 lg:grid-cols-2">{character.artifacts.map((artifact) => <ArtifactCard key={artifact.itemId} artifact={artifact} />)}</div> : <p className="mt-3 text-sm text-slate-500">No artifact data is available.</p>}
+
+        <div className="mt-6"><SectionLabel>Weapon</SectionLabel></div>
+        <div className="mt-3">{character.weapon ? <WeaponCard weapon={character.weapon} /> : <p className="text-sm text-slate-500">No weapon data is available.</p>}</div>
+      </div>
+    </details>
+  );
+}
+
+function ArtifactCard({ artifact }: { artifact: GenshinArtifact }) {
+  return (
+    <article className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 sm:p-4">
+      <div className="flex items-center gap-3">
+        <EquipmentImage src={artifact.iconUrl} alt={artifact.name ?? artifact.setName ?? "Artifact"} />
+        <div className="min-w-0 flex-1">
+          <h4 className="truncate text-sm font-semibold text-white">{artifact.name ?? artifact.setName ?? "Unknown Artifact"}</h4>
+          {artifact.setName && artifact.setName !== artifact.name ? <p className="mt-0.5 truncate text-[11px] text-amber-200/80">{artifact.setName}</p> : null}
+          <p className="mt-1 text-xs text-slate-500">{artifact.slot} · +{artifact.level ?? "—"}</p>
+        </div>
+      </div>
+      {artifact.mainStat ? <div className="mt-3 rounded-lg border border-violet-300/10 bg-violet-300/[0.04] px-3 py-2"><p className="text-[9px] uppercase tracking-wider text-slate-500">Main stat</p><p className="mt-1 flex justify-between gap-3 text-xs"><span className="text-slate-300">{artifact.mainStat.label}</span><strong className="text-violet-100">{artifact.mainStat.value}</strong></p></div> : null}
+      {artifact.substats.length ? <div className="mt-3"><p className="text-[9px] uppercase tracking-wider text-slate-500">Substats</p><dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5">{artifact.substats.map((stat) => <div key={`${stat.key}-${stat.value}`} className="flex justify-between gap-2 text-[11px]"><dt className="truncate text-slate-400">{stat.label}</dt><dd className="shrink-0 text-slate-200">{stat.value}</dd></div>)}</dl></div> : null}
+    </article>
+  );
+}
+
+function WeaponCard({ weapon }: { weapon: GenshinWeapon }) {
+  return (
+    <article className="flex flex-col gap-3 rounded-xl border border-amber-300/10 bg-amber-300/[0.035] p-4 sm:flex-row sm:items-center">
+      <EquipmentImage src={weapon.iconUrl} alt={weapon.name ?? "Weapon"} large />
+      <div className="min-w-0 flex-1">
+        <h4 className="font-semibold text-white">{weapon.name ?? "Unknown Weapon"}</h4>
+        <p className="mt-1 text-xs text-slate-400">Level {weapon.level ?? "—"}{weapon.refinement !== null ? ` · Refinement ${weapon.refinement}` : ""}</p>
+        {weapon.stats.length ? <div className="mt-2 flex flex-wrap gap-2">{weapon.stats.map((stat) => <span key={stat.key} className="rounded-md border border-white/[0.06] px-2 py-1 text-[10px] text-slate-300">{stat.label} {stat.value}</span>)}</div> : null}
+      </div>
+    </article>
+  );
+}
+
+function StatTile({ stat, compact = false }: { stat: GenshinDisplayStat; compact?: boolean }) {
+  return <div className={`rounded-lg border border-white/[0.06] bg-white/[0.025] ${compact ? "p-2" : "p-3"}`}><p className="truncate text-[10px] uppercase tracking-wide text-slate-500">{stat.label}</p><p className="mt-1 font-mono text-sm font-semibold text-white">{stat.value}</p></div>;
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-300">{children}</p>;
+}
+
+function EquipmentImage({ src, alt, large = false }: { src: string | null; alt: string; large?: boolean }) {
+  const size = large ? 64 : 48;
+  return <span className={`${large ? "size-16" : "size-12"} grid shrink-0 place-items-center rounded-lg border border-white/[0.06] bg-slate-900`}>{src ? <Image src={src} alt={alt} width={size} height={size} className="size-full object-contain" unoptimized /> : <span className="text-lg text-slate-600">◇</span>}</span>;
+}
+
+function CharacterImage({ src, name }: { src: string; name: string }) {
+  return <Image src={src} alt={`${name} portrait`} width={56} height={56} className="size-14 object-cover" unoptimized onError={(event) => { const image = event.currentTarget; const attempt = Number(image.dataset.fallback ?? "0"); const next = attempt === 0 ? image.src.replace("_Card.png", ".png") : attempt === 1 ? image.src.replace(".png", "_Circle.png") : ""; if (next) { image.dataset.fallback = String(attempt + 1); image.src = next; } }} />;
+}
+
+function countArtifactSets(artifacts: GenshinArtifact[]) {
+  const counts = new Map<string, number>();
+  for (const artifact of artifacts) if (artifact.setName) counts.set(artifact.setName, (counts.get(artifact.setName) ?? 0) + 1);
+  return counts;
+}

@@ -4,6 +4,7 @@ import { getChampionsRoster } from "@/integrations/pokemon/champions/provider";
 import { listPokemonTeams } from "@/services/pokemon-teams";
 
 import { PokemonDashboardSearch } from "./pokemon-dashboard-search";
+import { MetaCoresSection } from "./meta-cores";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,18 @@ export default async function PokemonChampionsDashboard() {
         </section>
 
         <div className="mt-6"><PokemonDashboardSearch doublesRoster={doublesRoster} singlesRoster={singlesRoster} /></div>
+
+        <MetaCoresSection doublesRoster={doublesRoster} singlesRoster={singlesRoster} />
+
+        <section className="mt-6 rounded-2xl border border-amber-300/15 bg-amber-300/[0.04] p-6">
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-amber-200">Community team sources</p>
+          <h2 className="mt-2 text-2xl font-semibold text-white">Explore full team rankings</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">These sources publish complete teams, unlike the teammate-core data above. Rankings and availability are maintained by their respective communities.</p>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <a href="https://champteams.gg/top-teams" target="_blank" rel="noreferrer" className="rounded-xl border border-white/10 bg-slate-950/60 p-4 transition hover:border-amber-200/40"><p className="font-semibold text-amber-100">ChampTeams.gg</p><p className="mt-1 text-xs leading-5 text-slate-400">Tournament teams ranked using win rate, play rate, event size, and recency.</p><span className="mt-3 inline-block text-xs text-amber-200">Open top teams →</span></a>
+            <a href="https://pokefeed.app/teams" target="_blank" rel="noreferrer" className="rounded-xl border border-white/10 bg-slate-950/60 p-4 transition hover:border-amber-200/40"><p className="font-semibold text-amber-100">PokeFeed</p><p className="mt-1 text-xs leading-5 text-slate-400">Community-shared Singles and Doubles teams ranked by player votes.</p><span className="mt-3 inline-block text-xs text-amber-200">Browse community teams →</span></a>
+          </div>
+        </section>
 
         <section className="mt-6 grid gap-4 md:grid-cols-2">
           <Link href="/pokemon-champions/teams" className="rounded-2xl border border-violet-300/20 bg-violet-300/[0.06] p-6 transition hover:border-violet-300/40"><p className="font-mono text-xs uppercase tracking-[0.2em] text-violet-300">Team lab</p><h2 className="mt-2 text-xl font-semibold text-white">Build and tune teams</h2><p className="mt-2 text-sm leading-6 text-slate-400">Save six-slot rosters, assign roles, and refine moves, items, abilities, and stat allocations.</p></Link>

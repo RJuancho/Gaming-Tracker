@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 
 import type { ChampionsRosterPokemon } from "@/integrations/pokemon/champions/provider";
-import { getPokemonFormSlug, getShowdownSpriteUrl } from "@/integrations/pokemon/assets";
+import { getChampionsSpriteUrl, getPokemonFormSlug, getShowdownFormSlug, getShowdownSpriteUrl } from "@/integrations/pokemon/assets";
 
 import { addTeamMember } from "./actions";
 import { getPokemonTypeColor } from "./pokemon-type-color";
@@ -237,7 +237,20 @@ export function PokemonRosterPicker({
 function RosterSprite({ pokemonId, name }: { pokemonId: string; name: string }) {
   const candidates = spriteCandidates(pokemonId, name);
   const [index, setIndex] = useState(0);
-  return <Image src={getShowdownSpriteUrl(candidates[index])} alt="" width={40} height={40} className="size-10 object-contain [image-rendering:pixelated]" unoptimized onError={() => setIndex((current) => Math.min(current + 1, candidates.length - 1))} />;
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return <span aria-label="Sprite unavailable" className="grid size-10 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-lg text-slate-600">◈</span>;
+  }
+
+  const sources = [getChampionsSpriteUrl(name), ...candidates.map(getShowdownSpriteUrl)];
+  return <Image src={sources[index]} alt="" width={40} height={40} className="size-10 object-contain [image-rendering:pixelated]" unoptimized onError={() => {
+    if (index >= sources.length - 1) {
+      setFailed(true);
+    } else {
+      setIndex((current) => current + 1);
+    }
+  }} />;
 }
 
 function spriteCandidates(pokemonId: string, name: string) {
@@ -247,6 +260,7 @@ function spriteCandidates(pokemonId: string, name: string) {
     .replace(/(alola|galar|hisui|paldea)$/, "-$1")
     .replace(/(forme)$/, "-$1");
   const hyphenatedFormSlug = getPokemonFormSlug(base);
+  const showdownFormSlug = getShowdownFormSlug(base);
   const baseSpecies = base.replace(/(alola|galar|hisui|paldea|forme|f)$/, "");
-  return [...new Set([base, formSlug, hyphenatedFormSlug, displaySlug, baseSpecies])];
+  return [...new Set([base, formSlug, hyphenatedFormSlug, showdownFormSlug, displaySlug, baseSpecies])];
 }
