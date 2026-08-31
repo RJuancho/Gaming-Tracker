@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 
 import type { ChampionsRosterPokemon } from "@/integrations/pokemon/champions/provider";
+import { getShowdownSpriteUrl } from "@/integrations/pokemon/assets";
 
 import { addTeamMember } from "./actions";
 import { getPokemonTypeColor } from "./pokemon-type-color";
@@ -14,13 +16,18 @@ export function PokemonRosterPicker({
   teamId,
   roster,
   usedPokemonIds,
+  synergyNames,
+  roleSuggestions,
 }: {
   teamId: number;
   roster: ChampionsRosterPokemon[];
   usedPokemonIds: string[];
+  synergyNames: string[];
+  roleSuggestions: Record<string, string[]>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [selectedPokemon, setSelectedPokemon] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const availableRoster = useMemo(() => {
@@ -34,8 +41,17 @@ export function PokemonRosterPicker({
           pokemon.types.some((type) =>
             type.toLowerCase().includes(normalizedQuery),
           )),
-    );
-  }, [query, roster, usedPokemonIds]);
+    ).sort((left, right) => {
+      const normalize = (value: string) => value.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
+      const isSynergy = (pokemon: ChampionsRosterPokemon) => synergyNames.some((name) => {
+        const candidate = normalize(name);
+        const rosterName = normalize(pokemon.name);
+        const rosterId = normalize(pokemon.pokemonId);
+        return candidate === rosterName || candidate === rosterId || candidate.includes(rosterName) || rosterName.includes(candidate) || candidate.includes(rosterId) || rosterId.includes(candidate);
+      });
+      return Number(isSynergy(right)) - Number(isSynergy(left)) || left.name.localeCompare(right.name);
+    });
+  }, [query, roster, usedPokemonIds, synergyNames]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -137,21 +153,32 @@ export function PokemonRosterPicker({
                     No current roster match.
                   </p>
                 ) : (
-                  availableRoster.map((pokemon) => (
+                  availableRoster.map((pokemon) => {
+                    const normalize = (value: string) => value.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
+                    const isSynergy = synergyNames.some((name) => {
+                      const candidate = normalize(name);
+                      const rosterName = normalize(pokemon.name);
+                      const rosterId = normalize(pokemon.pokemonId);
+                      return candidate === rosterName || candidate === rosterId || candidate.includes(rosterName) || rosterName.includes(candidate) || candidate.includes(rosterId) || rosterId.includes(candidate);
+                    });
+                    return (
                     <label
                       key={pokemon.pokemonId}
                       className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-white/[0.06] px-3 py-2.5 text-sm last:border-b-0 hover:bg-violet-300/[0.06]"
                     >
-                      <input
-                        type="radio"
+                      <RosterSprite pokemonId={pokemon.pokemonId} name={pokemon.name} />
+                        <input
+                          type="radio"
                         name="pokemonId"
                         value={pokemon.pokemonId}
-                        required
+                          required
+                          onChange={() => setSelectedPokemon(pokemon.pokemonId)}
                         className="accent-violet-300"
                       />
                       <span className="truncate font-medium text-slate-200">
                         {pokemon.name}
                       </span>
+                      {isSynergy ? <span className="text-[9px] uppercase tracking-wide text-emerald-300">Synergy</span> : null}
                       <span className="flex flex-wrap justify-end gap-1">
                         {pokemon.types.map((type) => (
                           <span
@@ -165,19 +192,17 @@ export function PokemonRosterPicker({
                         ))}
                       </span>
                     </label>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
               <label className="mt-4 block text-xs text-slate-400">
                 Intended role
-                <input
-                  name="role"
-                  required
-                  maxLength={60}
-                  placeholder="e.g. Physical carry"
-                  className={inputClassName}
-                />
+                <select name="role" required className={inputClassName} defaultValue="">
+                  <option value="" disabled>Choose the most useful role</option>
+                  {(roleSuggestions[selectedPokemon] ?? ["Physical attacker", "Special attacker", "Bulky support", "Speed control", "Setup sweeper"]).map((role) => <option key={role} value={role}>{role}</option>)}
+                </select>
               </label>
 
               <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -204,3 +229,18 @@ export function PokemonRosterPicker({
   );
 }
 
+function RosterSprite({ pokemonId, name }: { pokemonId: string; name: string }) {
+  const candidates = spriteCandidates(pokemonId, name);
+  const [index, setIndex] = useState(0);
+  return <Image src={getShowdownSpriteUrl(candidates[index])} alt="" width={40} height={40} className="size-10 object-contain [image-rendering:pixelated]" unoptimized onError={() => setIndex((current) => Math.min(current + 1, candidates.length - 1))} />;
+}
+
+function spriteCandidates(pokemonId: string, name: string) {
+  const base = pokemonId.toLowerCase();
+  const displaySlug = name.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-");
+  const formSlug = base
+    .replace(/(alola|galar|hisui|paldea)$/, "-$1")
+    .replace(/(forme)$/, "-$1");
+  const baseSpecies = base.replace(/(alola|galar|hisui|paldea|forme|f)$/, "");
+  return [...new Set([base, formSlug, displaySlug, baseSpecies])];
+}

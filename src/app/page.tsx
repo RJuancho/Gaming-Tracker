@@ -1,5 +1,13 @@
 const games = [
   {
+    name: "Genshin Impact",
+    shortName: "Genshin",
+    description:
+      "Track total wishes and pity locally, then compare character builds and rankings through Akasha.",
+    accent: "from-amber-400/25 to-orange-500/5",
+    marker: "G",
+  },
+  {
     name: "Teamfight Tactics",
     shortName: "TFT",
     description:
@@ -88,11 +96,13 @@ export default function Home() {
                 </p>
                 {game.shortName === "Champions" ? (
                   <a
-                    href="/pokemon-champions/snorlax"
+                    href="/pokemon-champions"
                     className="mt-6 inline-flex text-sm font-medium text-violet-200 transition-colors hover:text-white"
                   >
-                    View Snorlax preview →
+                    Open Pokémon dashboard →
                   </a>
+                ) : game.shortName === "Genshin" ? (
+                  <a href="/genshin-impact" className="mt-6 inline-flex text-sm font-medium text-amber-200 transition-colors hover:text-white">Open Genshin dashboard →</a>
                 ) : game.shortName === "TFT" ? (
                   <a
                     href="/tft"
@@ -127,4 +137,3 @@ export default function Home() {
     </main>
   );
 }
-

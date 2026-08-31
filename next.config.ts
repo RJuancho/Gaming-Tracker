@@ -5,6 +5,16 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "enka.network",
+        pathname: "/ui/**",
+      },
+      {
+        protocol: "https",
+        hostname: "play.pokemonshowdown.com",
+        pathname: "/sprites/**",
+      },
+      {
+        protocol: "https",
         hostname: "raw.githubusercontent.com",
         pathname: "/PokeAPI/sprites/master/sprites/pokemon/**",
       },
@@ -33,4 +43,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-

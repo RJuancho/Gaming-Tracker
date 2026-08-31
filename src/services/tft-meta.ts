@@ -32,6 +32,8 @@ type Composition = {
   traits: string[];
 };
 
+export type UnitItemization = { unitId: string; itemName: string; games: number; rate: number };
+
 export type MetaResult = {
   sampledPlayers: number;
   sampledMatches: number;
@@ -42,6 +44,7 @@ export type MetaResult = {
   setNumber: number | null;
   patch: string | null;
   compositions: Composition[];
+  itemizations: UnitItemization[];
   error?: string;
 };
 
@@ -130,6 +133,7 @@ export async function getCurrentTftMeta(
       setNumber: null,
       patch: null,
       compositions: [],
+      itemizations: [],
       error: message,
     };
     cachedResult = { expiresAt: Date.now() + CACHE_TTL_MS, value: result };
@@ -151,6 +155,7 @@ export async function getCurrentTftMeta(
       setNumber: null,
       patch: null,
       compositions: [],
+      itemizations: [],
       error: "Riot returned no Diamond entries for the SG2 ladder.",
     };
     cachedResult = { expiresAt: Date.now() + CACHE_TTL_MS, value: result };
@@ -212,6 +217,7 @@ export async function getCurrentTftMeta(
       match.info.game_datetime < sampleWindow.end.getTime(),
   );
   const compositions = aggregateCompositions(matches);
+  const itemizations = aggregateItemizations(matches);
   const result: MetaResult = {
     sampledPlayers,
     sampledMatches: matches.length,
@@ -222,6 +228,7 @@ export async function getCurrentTftMeta(
     setNumber: matches[0]?.info.tft_set_number ?? null,
     patch: matches[0]?.info.game_version ?? null,
     compositions,
+    itemizations,
     ...(matches.length === 0
       ? { error: "Riot returned no matches inside the completed daily window." }
       : {}),
@@ -229,6 +236,17 @@ export async function getCurrentTftMeta(
 
   cachedResult = { expiresAt: Date.now() + CACHE_TTL_MS, value: result };
   return result;
+}
+
+function aggregateItemizations(matches: TftMetaMatch[]): UnitItemization[] {
+  const counts = new Map<string, { games: number; items: Map<string, number> }>();
+  for (const match of matches) for (const participant of match.info.participants) for (const unit of participant.units) {
+    const current = counts.get(unit.character_id) ?? { games: 0, items: new Map() };
+    current.games += 1;
+    for (const item of unit.itemNames) current.items.set(item, (current.items.get(item) ?? 0) + 1);
+    counts.set(unit.character_id, current);
+  }
+  return [...counts.entries()].flatMap(([unitId, value]) => [...value.items.entries()].map(([itemName, games]) => ({ unitId, itemName, games, rate: Number((games / value.games * 100).toFixed(1)) }))).sort((left, right) => right.rate - left.rate);
 }
 
 export async function syncCurrentTftMeta() {
@@ -390,4 +408,3 @@ function aggregateCompositions(matches: TftMetaMatch[]): Composition[] {
     )
     .slice(0, 12);
 }
-

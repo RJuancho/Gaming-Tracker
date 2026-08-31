@@ -7,6 +7,7 @@ import {
   type TftAssetImages,
 } from "@/integrations/riot/assets";
 import { personalRiotProfile } from "@/integrations/riot/profile";
+import { getCurrentTftMeta } from "@/services/tft-meta";
 import {
   getPersonalTftMatch,
   getRecentTftMatchIds,
@@ -20,15 +21,43 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function TftProfilePage() {
-  const account = await getRiotAccountByRiotId({
-    gameName: personalRiotProfile.gameName,
-    tagLine: personalRiotProfile.tagLine,
-    region: personalRiotProfile.accountRegion,
-  });
+  if (!personalRiotProfile.gameName || !personalRiotProfile.tagLine) {
+    return (
+      <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100 sm:px-10">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-amber-300/20 bg-amber-300/[0.06] p-7">
+          <Link href="/" className="text-sm text-slate-400 hover:text-white">← Gaming Tracker</Link>
+          <p className="mt-10 font-mono text-xs uppercase tracking-[0.18em] text-amber-300">TFT profile setup</p>
+          <h1 className="mt-3 text-3xl font-semibold text-white">Add your Riot profile locally</h1>
+          <p className="mt-4 leading-7 text-slate-400">Set <code className="text-slate-200">RIOT_GAME_NAME</code> and <code className="text-slate-200">RIOT_TAG_LINE</code> in <code className="text-slate-200">.env.local</code>, then restart the development server. Your account values are intentionally not committed.</p>
+        </div>
+      </main>
+    );
+  }
+
+  let account;
+  try {
+    account = await getRiotAccountByRiotId({
+      gameName: personalRiotProfile.gameName,
+      tagLine: personalRiotProfile.tagLine,
+      region: personalRiotProfile.accountRegion,
+    });
+  } catch (error) {
+    return (
+      <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100 sm:px-10">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-amber-300/20 bg-amber-300/[0.06] p-7">
+          <Link href="/" className="text-sm text-slate-400 hover:text-white">← Gaming Tracker</Link>
+          <p className="mt-10 font-mono text-xs uppercase tracking-[0.18em] text-amber-300">TFT temporarily unavailable</p>
+          <h1 className="mt-3 text-3xl font-semibold text-white">Riot API rate limit reached</h1>
+          <p className="mt-4 leading-7 text-slate-400">{error instanceof Error ? error.message : "Riot temporarily refused the request."} Wait for the development-key limit to reset, then refresh. Meta sampling is bounded and cached to reduce requests.</p>
+        </div>
+      </main>
+    );
+  }
   const [leagueEntries, matchIds] = await Promise.all([
-    getTftLeagueEntries(account.puuid, personalRiotProfile.platform),
-    getRecentTftMatchIds(account.puuid, 10, personalRiotProfile.matchRegion),
+    getTftLeagueEntries(account.puuid, personalRiotProfile.platform).catch(() => []),
+    getRecentTftMatchIds(account.puuid, 10, personalRiotProfile.matchRegion).catch(() => []),
   ]);
+  const diamondMeta = await getCurrentTftMeta().catch(() => ({ itemizations: [] }));
   const recentMatches = (
     await Promise.all(
       matchIds.map(async (matchId) => {
@@ -213,6 +242,7 @@ export default async function TftProfilePage() {
                   assetImages={assetImages}
                 />
               ) : null}
+              {mostPlayedUnit ? <FavoriteUnitItemization unitId={mostPlayedUnit.id} unitName={mostPlayedUnitName ?? formatIdentifier(mostPlayedUnit.id)} itemizations={diamondMeta.itemizations} itemImages={assetImages?.items ?? {}} /> : null}
             </section>
 
             <section className="border-t border-white/10 py-10">
@@ -371,6 +401,11 @@ export default async function TftProfilePage() {
       </div>
     </main>
   );
+}
+
+function FavoriteUnitItemization({ unitId, unitName, itemizations, itemImages }: { unitId: string; unitName: string; itemizations: Array<{ unitId: string; itemName: string; games: number; rate: number }>; itemImages: Record<string, string | null> }) {
+  const items = itemizations.filter((item) => item.unitId === unitId).slice(0, 5);
+  return <article className="mt-6 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-5"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs uppercase tracking-wide text-cyan-300">Diamond itemization</p><h3 className="mt-2 text-xl font-semibold text-white">Popular items for {unitName}</h3></div><span className="text-xs text-slate-500">Top sampled Diamond players</span></div>{items.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{items.map((item) => <div key={item.itemName} className="rounded-xl border border-white/[0.08] bg-slate-950/60 p-3">{itemImages[item.itemName] ? <Image src={itemImages[item.itemName]!} alt="" width={44} height={44} className="size-11 object-contain" unoptimized /> : null}<p className="mt-2 text-xs font-medium text-slate-200">{item.itemName}</p><p className="mt-1 text-[10px] text-cyan-200">{item.rate}% · {item.games} games</p></div>)}</div> : <p className="mt-4 text-sm text-slate-500">No current itemization sample is available for this unit.</p>}</article>;
 }
 
 function RankCard({ entry }: { entry: TftLeagueEntry | undefined }) {
@@ -775,4 +810,3 @@ function formatPlayedAt(date: Date) {
     timeZone: "Asia/Manila",
   }).format(date);
 }
-

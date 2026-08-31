@@ -156,7 +156,7 @@ export async function getChampionsPokemon(
   pokemonId: string,
   format: BattleFormat,
 ): Promise<ChampionsPokemon> {
-  const id = pokemonIdSchema.parse(pokemonId);
+  const id = normalizeChampionsPokemonId(pokemonId);
   const parsedFormat = battleFormatSchema.parse(format);
   const url = new URL(`/api/pokemon/${id}`, CHAMPIONS_API_URL);
   url.searchParams.set("format", parsedFormat);
@@ -178,7 +178,7 @@ export async function getCurrentChampionsMeta(
   pokemonId: string,
   format: BattleFormat,
 ) {
-  const id = pokemonIdSchema.parse(pokemonId);
+  const id = normalizeChampionsPokemonId(pokemonId);
   const parsedFormat = battleFormatSchema.parse(format);
   const url = new URL(`/api/battle/${parsedFormat}/${id}`, CHAMPIONS_API_URL);
   const payload = await fetchJson(url, 3_600);
@@ -199,7 +199,7 @@ export async function getChampionsMetaHistory(
   format: BattleFormat,
   days: number,
 ): Promise<MetaSnapshot[]> {
-  const id = pokemonIdSchema.parse(pokemonId);
+  const id = normalizeChampionsPokemonId(pokemonId);
   const parsedFormat = battleFormatSchema.parse(format);
   const parsedDays = z.number().int().min(1).max(31).parse(days);
   const url = new URL(`/api/battle/${parsedFormat}/${id}`, CHAMPIONS_API_URL);
@@ -214,6 +214,22 @@ export async function getChampionsMetaHistory(
     source: snapshot.source,
     rankings: snapshot.rows.map(normalizeMetaRow),
   }));
+}
+
+function normalizeChampionsPokemonId(pokemonId: string) {
+  const id = pokemonIdSchema.parse(pokemonId);
+
+  // The Champions API follows Pokémon Showdown IDs for gendered forms.
+  // Resolve the ambiguous legacy slug to Male instead of allowing the
+  // upstream service to return an unrelated record.
+  if (id === "basculegion" || id === "basculegionmale" || id === "baculegion" || id === "baculegionmale") {
+    return "basculegionm";
+  }
+  if (id === "basculegionfemale" || id === "baculegionfemale") {
+    return "basculegionf";
+  }
+
+  return id;
 }
 
 function normalizeMetaRow(row: z.infer<typeof metaRowSchema>): MetaRanking {
@@ -268,4 +284,3 @@ async function fetchJson(url: URL, revalidate: number): Promise<unknown> {
 
   return response.json();
 }
-

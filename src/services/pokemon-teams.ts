@@ -13,7 +13,8 @@ import {
 export const createStarterTeamSchema = z.object({
   name: z.string().trim().min(1).max(80),
   format: z.enum(["Singles", "Doubles"]),
-  playstyle: z.enum(["bulky", "balanced", "carry"]),
+  playstyle: z.enum(["bulky", "balanced", "carry"]).optional(),
+  pokemonId: z.string().trim().min(1).max(40).optional(),
 });
 
 export type StarterTeamInput = z.infer<typeof createStarterTeamSchema>;
@@ -56,11 +57,20 @@ export const updatePokemonBuildSchema = z.object({
   statAllocationRank: z.coerce.number().int().positive(),
 });
 
+export const changeTeamMemberSchema = z.object({
+  teamId: z.coerce.number().int().positive(),
+  memberId: z.coerce.number().int().positive(),
+  pokemonId: z.string().trim().min(1).max(40).transform((value) => value.toLowerCase().replaceAll(/[^a-z0-9]/g, "")),
+  role: z.string().trim().min(1).max(60),
+});
+
+export type ChangeTeamMemberInput = z.infer<typeof changeTeamMemberSchema>;
+
 export type UpdatePokemonBuildInput = z.infer<
   typeof updatePokemonBuildSchema
 >;
 
-const roleByPlaystyle: Record<StarterTeamInput["playstyle"], string> = {
+const roleByPlaystyle: Record<"bulky" | "balanced" | "carry", string> = {
   bulky: "Bulky support",
   balanced: "Flexible anchor",
   carry: "Setup carry",
@@ -68,6 +78,9 @@ const roleByPlaystyle: Record<StarterTeamInput["playstyle"], string> = {
 
 export async function createSnorlaxStarterTeam(input: StarterTeamInput) {
   const values = createStarterTeamSchema.parse(input);
+  const starterPokemon = values.pokemonId
+    ? await getChampionsPokemon(values.pokemonId, values.format)
+    : null;
 
   return database.transaction(async (transaction) => {
     const [team] = await transaction
@@ -75,18 +88,22 @@ export async function createSnorlaxStarterTeam(input: StarterTeamInput) {
       .values({
         name: values.name,
         format: values.format,
-        notes: `Started from the Snorlax ${values.playstyle} preference.`,
+        notes: starterPokemon
+          ? `Started with ${starterPokemon.name}.`
+          : "Blank team ready for your first Pokémon.",
       })
       .returning({ id: pokemonTeams.id });
 
-    await transaction.insert(pokemonTeamMembers).values({
-      teamId: team.id,
-      slot: 1,
-      pokemonId: "snorlax",
-      displayName: "Snorlax",
-      role: roleByPlaystyle[values.playstyle],
-      notes: "Build choices have not been selected yet.",
-    });
+    if (starterPokemon) {
+      await transaction.insert(pokemonTeamMembers).values({
+        teamId: team.id,
+        slot: 1,
+        pokemonId: starterPokemon.showdownId,
+        displayName: starterPokemon.name,
+        role: values.playstyle ? roleByPlaystyle[values.playstyle] : "Flexible role",
+        notes: "Build choices have not been selected yet.",
+      });
+    }
 
     return team.id;
   });
@@ -193,6 +210,43 @@ export async function addPokemonTeamMember(input: AddTeamMemberInput) {
     role: values.role,
     notes: "Build choices have not been selected yet.",
   });
+}
+
+export async function changePokemonTeamMember(input: ChangeTeamMemberInput) {
+  const values = changeTeamMemberSchema.parse(input);
+  const [member] = await database
+    .select({ id: pokemonTeamMembers.id, teamId: pokemonTeamMembers.teamId, pokemonId: pokemonTeamMembers.pokemonId, format: pokemonTeams.format })
+    .from(pokemonTeamMembers)
+    .innerJoin(pokemonTeams, eq(pokemonTeams.id, pokemonTeamMembers.teamId))
+    .where(and(eq(pokemonTeamMembers.id, values.memberId), eq(pokemonTeamMembers.teamId, values.teamId)))
+    .limit(1);
+
+  if (!member) throw new Error("That team member no longer exists.");
+  if (member.pokemonId !== values.pokemonId) {
+    const duplicate = await database
+      .select({ id: pokemonTeamMembers.id })
+      .from(pokemonTeamMembers)
+      .where(and(eq(pokemonTeamMembers.teamId, values.teamId), eq(pokemonTeamMembers.pokemonId, values.pokemonId)))
+      .limit(1);
+    if (duplicate.length > 0) throw new Error("That Pokémon is already on this team.");
+  }
+
+  const pokemon = await getChampionsPokemon(values.pokemonId, member.format === "Singles" ? "Singles" : "Doubles");
+  await database.update(pokemonTeamMembers).set({
+    pokemonId: pokemon.showdownId,
+    displayName: pokemon.name,
+    role: values.role,
+    heldItem: null,
+    ability: null,
+    nature: null,
+    moves: [],
+    hpPoints: 0,
+    attackPoints: 0,
+    defensePoints: 0,
+    specialAttackPoints: 0,
+    specialDefensePoints: 0,
+    speedPoints: 0,
+  }).where(and(eq(pokemonTeamMembers.id, values.memberId), eq(pokemonTeamMembers.teamId, values.teamId)));
 }
 
 export async function updatePokemonBuild(input: UpdatePokemonBuildInput) {
@@ -375,4 +429,3 @@ export async function listPokemonTeams() {
 
   return [...teams.values()];
 }
-

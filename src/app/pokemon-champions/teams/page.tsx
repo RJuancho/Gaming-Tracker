@@ -12,11 +12,13 @@ import {
 } from "@/integrations/pokemon/pokeapi/provider";
 import { listPokemonTeams } from "@/services/pokemon-teams";
 
-import { savePokemonBuild } from "./actions";
+import { changeTeamMember, savePokemonBuild } from "./actions";
 import { CreateTeamModal } from "./create-team-modal";
 import { PokemonRosterPicker } from "./pokemon-roster-picker";
 import { getPokemonTypeColor } from "./pokemon-type-color";
 import { TeamActions } from "./team-actions";
+import { PokemonDetailPanel, PokemonSlotButton } from "./pokemon-detail-toggle";
+import { TeamViewModal } from "./team-view-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +28,7 @@ const compactFieldClassName =
 export default async function PokemonTeamsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; saved?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; pokemon?: string }>;
 }) {
   const feedback = await searchParams;
   const [teams, doublesRoster, singlesRoster] = await Promise.all([
@@ -42,10 +44,10 @@ export default async function PokemonTeamsPage({
       <div className="mx-auto w-full max-w-6xl px-6 py-10 sm:px-10 lg:px-12">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Link
-            href="/pokemon-champions/snorlax"
+            href="/pokemon-champions"
             className="text-sm text-slate-400 transition-colors hover:text-white"
           >
-            ← Snorlax lookup
+            ← Pokémon dashboard
           </Link>
           <span className="rounded-full border border-violet-300/20 bg-violet-300/10 px-3 py-1 text-xs text-violet-200">
             Local editing preview
@@ -60,10 +62,9 @@ export default async function PokemonTeamsPage({
             Build around your preferences.
           </h1>
           <p className="mt-5 text-lg leading-8 text-slate-400">
-            Start a team with Snorlax and choose its intended role. Moves,
-            nature, ability, item, and teammates will be selected in the next
-            small iteration—the meta lookup remains guidance, not an invented
-            complete build.
+            Start with a roster from the dashboard and choose each Pokémon’s
+            intended role. Moves, nature, ability, item, and teammates can be
+            refined as your build takes shape.
           </p>
         </header>
 
@@ -101,7 +102,7 @@ export default async function PokemonTeamsPage({
                 <span className="text-sm text-slate-500">
                   {teams.length} {teams.length === 1 ? "team" : "teams"}
                 </span>
-                <CreateTeamModal />
+                <CreateTeamModal initialPokemon={feedback.pokemon} />
               </div>
             </div>
 
@@ -138,6 +139,22 @@ export default async function PokemonTeamsPage({
                           notes={team.notes}
                           memberCount={team.members.length}
                         />
+                        <TeamViewModal
+                          teamName={team.name}
+                          format={team.format}
+                          members={team.members.map((member) => ({
+                            name: member.name,
+                            role: member.role,
+                            heldItem: member.heldItem,
+                            ability: member.ability,
+                            nature: member.nature,
+                            moves: member.moves,
+                            statAllocation: member.statAllocation,
+                            pokemonSprite: buildVisuals.get(member.id)?.pokemonSprite ?? null,
+                            heldItemSprite: buildVisuals.get(member.id)?.heldItemSprite ?? null,
+                            moveTypes: buildSuggestions.get(`${team.format}:${member.pokemonId}`)?.moveTypes ?? {},
+                          }))}
+                        />
                       </div>
                     </div>
 
@@ -153,7 +170,7 @@ export default async function PokemonTeamsPage({
                             className="grid min-h-24 place-items-center rounded-xl border border-white/[0.07] bg-slate-950/50 p-2 text-center"
                           >
                             {member ? (
-                              <div>
+                              <PokemonSlotButton memberId={member.id}><div>
                                 <div className="relative mx-auto w-fit">
                                   {buildVisuals.get(member.id)?.pokemonSprite ? (
                                     <Image
@@ -173,11 +190,11 @@ export default async function PokemonTeamsPage({
                                   buildVisuals.get(member.id)?.heldItemSprite ? (
                                     <span
                                       className="absolute -bottom-1.5 -right-2 grid size-7 place-items-center rounded-lg border border-amber-200/25 bg-slate-950/95 shadow-lg"
-                                      title={member.heldItem}
+                                      title={normalizeHeldItemName(member.heldItem)}
                                     >
                                       <Image
                                         src={buildVisuals.get(member.id)!.heldItemSprite!}
-                                        alt={member.heldItem}
+                                        alt={normalizeHeldItemName(member.heldItem)}
                                         width={24}
                                         height={24}
                                         className="size-6 object-contain [image-rendering:pixelated]"
@@ -195,10 +212,10 @@ export default async function PokemonTeamsPage({
                                 {member.heldItem &&
                                 !buildVisuals.get(member.id)?.heldItemSprite ? (
                                   <p className="mt-1 text-[10px] text-amber-200/80">
-                                    {member.heldItem}
+                                    {normalizeHeldItemName(member.heldItem)}
                                   </p>
                                 ) : null}
-                              </div>
+                              </div></PokemonSlotButton>
                             ) : (
                               <span className="text-xs text-slate-700">
                                 Slot {index + 1}
@@ -209,7 +226,7 @@ export default async function PokemonTeamsPage({
                       })}
                     </div>
 
-                    <details open className="group">
+                    <details className="group">
                       <summary className="mt-3 flex cursor-pointer list-none items-center justify-end gap-1.5 text-xs font-medium text-slate-500 transition hover:text-violet-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 [&::-webkit-details-marker]:hidden">
                         <span className="group-open:hidden">
                           Show team details
@@ -243,10 +260,18 @@ export default async function PokemonTeamsPage({
                               );
 
                             return (
+                              <div key={member.id} className="space-y-2">
+                              <form action={changeTeamMember} className="flex flex-wrap items-end gap-2 rounded-xl border border-violet-300/10 bg-violet-300/[0.03] p-2">
+                                <input type="hidden" name="teamId" value={team.id} />
+                                <input type="hidden" name="memberId" value={member.id} />
+                                <input type="hidden" name="role" value={member.role} />
+                                <label className="min-w-0 flex-1 text-[11px] text-slate-500">Change Pokémon<select name="pokemonId" defaultValue={member.pokemonId} className={compactFieldClassName}>{(team.format === "Singles" ? singlesRoster : doublesRoster).map((pokemon) => <option key={pokemon.pokemonId} value={pokemon.pokemonId}>{pokemon.name}</option>)}</select></label>
+                                <button type="submit" className="rounded-lg border border-violet-300/20 px-3 py-2 text-xs font-medium text-violet-200 hover:bg-violet-300/10">Replace</button>
+                              </form>
+                              <PokemonDetailPanel memberId={member.id} name={member.name}>
                               <form
                                 action={savePokemonBuild}
-                                key={member.id}
-                                className="rounded-xl border border-white/[0.07] bg-slate-950/45 p-3"
+                                className="border-t border-white/[0.07] p-3"
                               >
                                 <input
                                   type="hidden"
@@ -263,14 +288,14 @@ export default async function PokemonTeamsPage({
                                     ?.heldItemSprite ? (
                                     <span
                                       className="grid size-8 shrink-0 place-items-center rounded-lg border border-amber-200/15 bg-slate-900"
-                                      title={member.heldItem ?? undefined}
+                                      title={member.heldItem ? normalizeHeldItemName(member.heldItem) : undefined}
                                     >
                                       <Image
                                         src={
                                           buildVisuals.get(member.id)!
                                             .heldItemSprite!
                                         }
-                                        alt={member.heldItem ?? "Held item"}
+                                        alt={member.heldItem ? normalizeHeldItemName(member.heldItem) : "Held item"}
                                         width={26}
                                         height={26}
                                         className="size-6 object-contain [image-rendering:pixelated]"
@@ -386,6 +411,8 @@ export default async function PokemonTeamsPage({
                                   </button>
                                 </div>
                               </form>
+                              </PokemonDetailPanel>
+                              </div>
                             );
                           })}
                         </div>
@@ -403,6 +430,8 @@ export default async function PokemonTeamsPage({
                           usedPokemonIds={team.members.map(
                             (member) => member.pokemonId,
                           )}
+                          synergyNames={team.members.flatMap((member) => buildSuggestions.get(`${team.format}:${member.pokemonId}`)?.teammates.map((choice) => choice.name) ?? [])}
+                          roleSuggestions={Object.fromEntries([...buildSuggestions.entries()].filter(([key]) => key.startsWith(`${team.format}:`)).map(([key, value]) => [key.slice(team.format.length + 1), value.natures.map((choice) => choice.name)]))}
                         />
                       ) : (
                         <p className="mt-5 border-t border-white/10 pt-4 text-xs text-slate-500">
@@ -438,6 +467,7 @@ type BuildSuggestions = {
   items: Choice[];
   abilities: Choice[];
   natures: Choice[];
+  teammates: Choice[];
   moves: Choice[];
   moveTypes: Record<string, string>;
   allocations: AllocationChoice[];
@@ -447,6 +477,7 @@ const emptyBuildSuggestions: BuildSuggestions = {
   items: [],
   abilities: [],
   natures: [],
+  teammates: [],
   moves: [],
   moveTypes: {},
   allocations: [],
@@ -479,7 +510,7 @@ async function getBuildSuggestions(
           member.format,
         );
         const choices = (
-          category: "held_item" | "ability" | "stat_alignment" | "move",
+          category: "held_item" | "ability" | "stat_alignment" | "move" | "teammate",
         ) =>
           meta.rankings
             .filter((ranking) => ranking.category === category && ranking.name)
@@ -503,6 +534,7 @@ async function getBuildSuggestions(
           items: choices("held_item"),
           abilities: choices("ability"),
           natures: choices("stat_alignment"),
+          teammates: choices("teammate"),
           moves: choices("move"),
           moveTypes,
           allocations: meta.rankings
@@ -618,11 +650,15 @@ function formatChoicePercentage(percentage: number | null) {
 }
 
 function toPokeApiSlug(value: string) {
-  return value
+  return normalizeHeldItemName(value)
     .toLowerCase()
     .replaceAll(" ", "-")
     .replaceAll("'", "")
     .replaceAll(".", "");
+}
+
+function normalizeHeldItemName(value: string) {
+  return value.replace(/^tyra\s+nitarite$/i, "Tyranitarite");
 }
 
 function formatAllocation(stats: AllocationStats) {
@@ -666,4 +702,3 @@ function hasCompleteSuggestions(suggestions: BuildSuggestions) {
     suggestions.allocations.length > 0
   );
 }
-

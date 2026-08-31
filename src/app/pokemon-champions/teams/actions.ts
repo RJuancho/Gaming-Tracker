@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import {
   addPokemonTeamMember,
   addTeamMemberSchema,
+  changePokemonTeamMember,
+  changeTeamMemberSchema,
   createSnorlaxStarterTeam,
   createStarterTeamSchema,
   deletePokemonTeam,
@@ -23,7 +25,8 @@ export async function createSnorlaxTeam(formData: FormData) {
   const input = createStarterTeamSchema.parse({
     name: formData.get("name"),
     format: formData.get("format"),
-    playstyle: formData.get("playstyle"),
+    playstyle: formData.get("playstyle") || undefined,
+    pokemonId: formData.get("pokemonId") || undefined,
   });
 
   await createSnorlaxStarterTeam(input);
@@ -92,6 +95,26 @@ export async function editTeam(formData: FormData) {
   redirect(`/pokemon-champions/teams${query}`);
 }
 
+export async function changeTeamMember(formData: FormData) {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Team editing requires authentication before deployment.");
+  }
+  const input = changeTeamMemberSchema.safeParse({
+    teamId: formData.get("teamId"),
+    memberId: formData.get("memberId"),
+    pokemonId: formData.get("pokemonId"),
+    role: formData.get("role"),
+  });
+  let errorMessage: string | null = null;
+  if (!input.success) errorMessage = "Choose a valid Pokémon and role.";
+  else {
+    try { await changePokemonTeamMember(input.data); } catch (error) {
+      errorMessage = error instanceof Error ? error.message : "The Pokémon could not be changed.";
+    }
+  }
+  redirect(`/pokemon-champions/teams${errorMessage ? `?error=${encodeURIComponent(errorMessage)}` : "?saved=member"}`);
+}
+
 export async function deleteTeam(formData: FormData) {
   if (process.env.NODE_ENV === "production") {
     throw new Error("Team editing requires authentication before deployment.");
@@ -151,4 +174,3 @@ export async function savePokemonBuild(formData: FormData) {
     : "?saved=build";
   redirect(`/pokemon-champions/teams${query}`);
 }
-
