@@ -12,6 +12,7 @@ import {
 import {
   getItemReference,
   getMoveReference,
+  getPokemonAvailability,
   getPokemonReference,
 } from "@/integrations/pokemon/pokeapi/provider";
 
@@ -70,11 +71,12 @@ const statLabels: Array<{ key: keyof ChampionsBattleStats; label: string }> = [
 ];
 
 export default async function PokemonPreviewPage({ pokemonId }: { pokemonId: string }) {
-  const [pokemon, currentMeta, history, reference] = await Promise.all([
+  const [pokemon, currentMeta, history, reference, availability] = await Promise.all([
     getChampionsPokemon(pokemonId, "Doubles"),
     getCurrentChampionsMeta(pokemonId, "Doubles"),
     getChampionsMetaHistory(pokemonId, "Doubles", 7),
     getPokemonReference(pokemonId),
+    getPokemonAvailability(pokemonId),
   ]);
   const rankingVisuals = await getRankingVisuals(currentMeta.rankings);
 
@@ -82,10 +84,10 @@ export default async function PokemonPreviewPage({ pokemonId }: { pokemonId: str
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto w-full max-w-6xl px-6 py-10 sm:px-10 lg:px-12">
         <Link
-          href="/"
+          href="/pokemon-champions"
           className="text-sm text-slate-400 transition-colors hover:text-white"
         >
-          ← Gaming Tracker
+          ← Pokémon Champions dashboard
         </Link>
 
         <header className="mt-12 flex flex-col gap-8 border-b border-white/10 pb-10 sm:flex-row sm:items-center sm:justify-between">
@@ -168,6 +170,37 @@ export default async function PokemonPreviewPage({ pokemonId }: { pokemonId: str
             These are Champions baseline battle values, not canonical species
             base stats.
           </p>
+        </section>
+
+        <section className="border-t border-white/10 py-10">
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-emerald-300">
+            Source games
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold">Where to obtain {pokemon.name}</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
+            Confirmed encounter records, regional Pokédex coverage, and documented form-specific acquisition paths. Pokémon HOME transfers may make this Pokémon usable in additional compatible games.
+          </p>
+          {availability.games.length ? (
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {availability.games.map((game) => (
+                <article key={game.gameId} className="rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.035] p-4">
+                  <h3 className="font-semibold text-white">{game.gameName}</h3>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {game.methods.map((method) => (
+                      <span key={method} className="rounded-md border border-white/[0.07] bg-slate-950/50 px-2 py-1 text-[11px] text-emerald-100/80">
+                        {method}
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-6 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm text-slate-400">
+              No acquisition or modern-game Pokédex record is currently available for this form. It may require evolution, transfer, an event, or another game-specific method.
+            </p>
+          )}
+          <p className="mt-4 max-w-3xl text-xs leading-5 text-slate-500">{availability.sourceNote}</p>
         </section>
 
         <section className="border-t border-white/10 py-10">

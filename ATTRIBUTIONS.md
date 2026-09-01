@@ -23,6 +23,14 @@ The add-Pokémon picker loads form-aware sprites from
 The project does not claim ownership of those sprites or associated Pokémon
 intellectual property.
 
+## Pokémon Legends: Z-A community roster
+
+The game-availability view supplements PokéAPI with the community-maintained
+[PokeZACatchCalc dataset](https://github.com/TheFauxDreamer/PokeZACatchCalc)
+for Pokémon Legends: Z-A roster coverage. This data remains subject to its
+provider's terms and may lag game updates; the project does not claim ownership
+of the underlying Pokémon data or intellectual property.
+
 ## Riot Games / Teamfight Tactics
 
 The TFT integration retrieves account, match, league, and game data through
