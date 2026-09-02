@@ -1,7 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
-
 import {
   addPokemonTeamMember,
   addTeamMemberSchema,
@@ -17,113 +15,155 @@ import {
   updateTeamSchema,
 } from "@/services/pokemon-teams";
 
-export async function createSnorlaxTeam(formData: FormData) {
-  const input = createStarterTeamSchema.parse({
+export type TeamActionState = {
+  status: "idle" | "success" | "error";
+  action: "create" | "edit" | "replace" | "delete";
+  message: string;
+  id: number;
+};
+
+function feedback(
+  status: "success" | "error",
+  action: TeamActionState["action"],
+  message: string,
+): TeamActionState {
+  return { status, action, message, id: Date.now() };
+}
+
+export async function createSnorlaxTeam(
+  _state: TeamActionState,
+  formData: FormData,
+) {
+  const input = createStarterTeamSchema.safeParse({
     name: formData.get("name"),
     format: formData.get("format"),
     playstyle: formData.get("playstyle") || undefined,
     pokemonId: formData.get("pokemonId") || undefined,
   });
 
-  await createSnorlaxStarterTeam(input);
-  redirect("/pokemon-champions/teams");
+  if (!input.success) {
+    return feedback("error", "create", "Enter a valid team name and battle format.");
+  }
+
+  try {
+    await createSnorlaxStarterTeam(input.data);
+    return feedback("success", "create", "Team created.");
+  } catch (error) {
+    return feedback(
+      "error",
+      "create",
+      error instanceof Error ? error.message : "The team could not be created.",
+    );
+  }
 }
 
-export async function addTeamMember(formData: FormData) {
+export async function addTeamMember(
+  _state: TeamActionState,
+  formData: FormData,
+) {
   const input = addTeamMemberSchema.safeParse({
     teamId: formData.get("teamId"),
     pokemonId: formData.get("pokemonId"),
     role: formData.get("role"),
   });
 
-  let errorMessage: string | null = null;
-
   if (!input.success) {
-    errorMessage = "Enter a Pokémon name and a role.";
-  } else {
-    try {
-      await addPokemonTeamMember(input.data);
-    } catch (error) {
-      errorMessage =
-        error instanceof Error
-          ? error.message
-          : "The Pokémon could not be added.";
-    }
+    return feedback("error", "create", "Choose a Pokémon and an intended role.");
   }
 
-  const query = errorMessage
-    ? `?error=${encodeURIComponent(errorMessage)}`
-    : "?saved=member";
-  redirect(`/pokemon-champions/teams${query}`);
+  try {
+    await addPokemonTeamMember(input.data);
+    return feedback("success", "create", "Pokémon added to the next open team slot.");
+  } catch (error) {
+    return feedback(
+      "error",
+      "create",
+      error instanceof Error ? error.message : "The Pokémon could not be added.",
+    );
+  }
 }
 
-export async function editTeam(formData: FormData) {
+export async function editTeam(
+  _state: TeamActionState,
+  formData: FormData,
+) {
   const input = updateTeamSchema.safeParse({
     teamId: formData.get("teamId"),
     name: formData.get("name"),
     format: formData.get("format"),
     notes: formData.get("notes"),
   });
-  let errorMessage: string | null = null;
-
   if (!input.success) {
-    errorMessage = "Enter a valid team name, format, and notes.";
-  } else {
-    try {
-      await updatePokemonTeam(input.data);
-    } catch (error) {
-      errorMessage =
-        error instanceof Error ? error.message : "The team could not be updated.";
-    }
+    return feedback("error", "edit", "Enter a valid team name, format, and notes.");
   }
 
-  const query = errorMessage
-    ? `?error=${encodeURIComponent(errorMessage)}`
-    : "?saved=team";
-  redirect(`/pokemon-champions/teams${query}`);
+  try {
+    await updatePokemonTeam(input.data);
+    return feedback("success", "edit", "Team details updated.");
+  } catch (error) {
+    return feedback(
+      "error",
+      "edit",
+      error instanceof Error ? error.message : "The team could not be updated.",
+    );
+  }
 }
 
-export async function changeTeamMember(formData: FormData) {
+export async function changeTeamMember(
+  _state: TeamActionState,
+  formData: FormData,
+) {
   const input = changeTeamMemberSchema.safeParse({
     teamId: formData.get("teamId"),
     memberId: formData.get("memberId"),
     pokemonId: formData.get("pokemonId"),
     role: formData.get("role"),
   });
-  let errorMessage: string | null = null;
-  if (!input.success) errorMessage = "Choose a valid Pokémon and role.";
-  else {
-    try { await changePokemonTeamMember(input.data); } catch (error) {
-      errorMessage = error instanceof Error ? error.message : "The Pokémon could not be changed.";
-    }
+  if (!input.success) {
+    return feedback("error", "replace", "Choose a valid Pokémon and role.");
   }
-  redirect(`/pokemon-champions/teams${errorMessage ? `?error=${encodeURIComponent(errorMessage)}` : "?saved=member"}`);
+
+  try {
+    await changePokemonTeamMember(input.data);
+    return feedback("success", "replace", "Team member replaced.");
+  } catch (error) {
+    return feedback(
+      "error",
+      "replace",
+      error instanceof Error
+        ? error.message
+        : "The Pokémon could not be changed.",
+    );
+  }
 }
 
-export async function deleteTeam(formData: FormData) {
+export async function deleteTeam(
+  _state: TeamActionState,
+  formData: FormData,
+) {
   const input = deleteTeamSchema.safeParse({
     teamId: formData.get("teamId"),
   });
-  let errorMessage: string | null = null;
-
   if (!input.success) {
-    errorMessage = "That team could not be identified.";
-  } else {
-    try {
-      await deletePokemonTeam(input.data);
-    } catch (error) {
-      errorMessage =
-        error instanceof Error ? error.message : "The team could not be deleted.";
-    }
+    return feedback("error", "delete", "That team could not be identified.");
   }
 
-  const query = errorMessage
-    ? `?error=${encodeURIComponent(errorMessage)}`
-    : "?saved=deleted";
-  redirect(`/pokemon-champions/teams${query}`);
+  try {
+    await deletePokemonTeam(input.data);
+    return feedback("success", "delete", "Team deleted.");
+  } catch (error) {
+    return feedback(
+      "error",
+      "delete",
+      error instanceof Error ? error.message : "The team could not be deleted.",
+    );
+  }
 }
 
-export async function savePokemonBuild(formData: FormData) {
+export async function savePokemonBuild(
+  _state: TeamActionState,
+  formData: FormData,
+) {
   const input = updatePokemonBuildSchema.safeParse({
     teamId: formData.get("teamId"),
     memberId: formData.get("memberId"),
@@ -133,21 +173,22 @@ export async function savePokemonBuild(formData: FormData) {
     moves: formData.getAll("moves"),
     statAllocationRank: formData.get("statAllocationRank"),
   });
-  let errorMessage: string | null = null;
-
   if (!input.success) {
-    errorMessage = "Choose an item, ability, nature, moves, and stat allocation.";
-  } else {
-    try {
-      await updatePokemonBuild(input.data);
-    } catch (error) {
-      errorMessage =
-        error instanceof Error ? error.message : "The build was not saved.";
-    }
+    return feedback(
+      "error",
+      "edit",
+      "Choose an item, ability, nature, moves, and stat allocation.",
+    );
   }
 
-  const query = errorMessage
-    ? `?error=${encodeURIComponent(errorMessage)}`
-    : "?saved=build";
-  redirect(`/pokemon-champions/teams${query}`);
+  try {
+    await updatePokemonBuild(input.data);
+    return feedback("success", "edit", "Pokémon build saved.");
+  } catch (error) {
+    return feedback(
+      "error",
+      "edit",
+      error instanceof Error ? error.message : "The build was not saved.",
+    );
+  }
 }

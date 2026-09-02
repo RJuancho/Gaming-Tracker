@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { createSnorlaxTeam } from "./actions";
+import { TeamActionForm } from "./team-action-form";
 
 const fieldClassName =
   "mt-2 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-violet-300/50";
@@ -85,7 +86,11 @@ export function CreateTeamModal({ initialPokemon }: { initialPokemon?: string })
               </button>
             </div>
 
-            <form action={createSnorlaxTeam} className="mt-6 space-y-5">
+            <TeamActionForm
+              action={createSnorlaxTeam}
+              className="mt-6 space-y-5"
+              onSuccess={() => setIsOpen(false)}
+            >
               {initialPokemon ? <input type="hidden" name="pokemonId" value={initialPokemon} /> : null}
               <label className="block text-sm text-slate-300">
                 Team name
@@ -139,7 +144,7 @@ export function CreateTeamModal({ initialPokemon }: { initialPokemon?: string })
                   {initialPokemon ? `Create team with ${initialPokemon}` : "Create blank team"}
                 </button>
               </div>
-            </form>
+            </TeamActionForm>
 
             <p className="mt-4 text-xs leading-5 text-slate-500">
               Writes are limited to local development until this personal

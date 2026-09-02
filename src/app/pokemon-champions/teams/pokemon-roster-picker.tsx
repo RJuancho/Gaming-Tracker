@@ -8,6 +8,7 @@ import { getChampionsSpriteUrl, getPokemonFormSlug, getShowdownFormSlug, getShow
 
 import { addTeamMember } from "./actions";
 import { getPokemonTypeColor } from "./pokemon-type-color";
+import { TeamActionForm } from "./team-action-form";
 
 const inputClassName =
   "mt-2 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-violet-300/50";
@@ -128,7 +129,15 @@ export function PokemonRosterPicker({
               </button>
             </div>
 
-            <form action={addTeamMember} className="mt-5">
+            <TeamActionForm
+              action={addTeamMember}
+              className="mt-5"
+              onSuccess={() => {
+                setIsOpen(false);
+                setQuery("");
+                setSelectedPokemon("");
+              }}
+            >
               <input type="hidden" name="teamId" value={teamId} />
               <div className="flex items-end justify-between gap-4">
                 <label className="block min-w-0 flex-1 text-xs text-slate-400">
@@ -226,7 +235,7 @@ export function PokemonRosterPicker({
                   Add selected Pokémon
                 </button>
               </div>
-            </form>
+            </TeamActionForm>
           </section>
         </div>
       ) : null}

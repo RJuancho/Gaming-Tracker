@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { deleteTeam, editTeam } from "./actions";
+import { TeamActionForm } from "./team-action-form";
 
 const fieldClassName =
   "mt-2 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-violet-300/50";
@@ -122,7 +123,11 @@ export function TeamActions({
             </div>
 
             {openDialog === "edit" ? (
-              <form action={editTeam} className="mt-6 space-y-5">
+              <TeamActionForm
+                action={editTeam}
+                className="mt-6 space-y-5"
+                onSuccess={() => setOpenDialog(null)}
+              >
                 <input type="hidden" name="teamId" value={teamId} />
                 <label className="block text-sm text-slate-300">
                   Team name
@@ -180,9 +185,13 @@ export function TeamActions({
                     Save changes
                   </button>
                 </div>
-              </form>
+              </TeamActionForm>
             ) : (
-              <form action={deleteTeam} className="mt-6">
+              <TeamActionForm
+                action={deleteTeam}
+                className="mt-6"
+                onSuccess={() => setOpenDialog(null)}
+              >
                 <input type="hidden" name="teamId" value={teamId} />
                 <p className="text-sm leading-6 text-slate-300">
                   <span className="font-semibold text-white">{name}</span> and
@@ -207,7 +216,7 @@ export function TeamActions({
                     Delete team
                   </button>
                 </div>
-              </form>
+              </TeamActionForm>
             )}
           </section>
         </div>
@@ -215,4 +224,3 @@ export function TeamActions({
     </>
   );
 }
-

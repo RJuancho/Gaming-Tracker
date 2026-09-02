@@ -17,6 +17,7 @@ import { CreateTeamModal } from "./create-team-modal";
 import { PokemonRosterPicker } from "./pokemon-roster-picker";
 import { getPokemonTypeColor } from "./pokemon-type-color";
 import { TeamActions } from "./team-actions";
+import { TeamActionForm } from "./team-action-form";
 import { PokemonDetailPanel, PokemonSlotButton } from "./pokemon-detail-toggle";
 import { TeamViewModal } from "./team-view-modal";
 
@@ -28,9 +29,9 @@ const compactFieldClassName =
 export default async function PokemonTeamsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; saved?: string; pokemon?: string }>;
+  searchParams: Promise<{ pokemon?: string }>;
 }) {
-  const feedback = await searchParams;
+  const { pokemon: initialPokemon } = await searchParams;
   const [teams, doublesRoster, singlesRoster] = await Promise.all([
     listPokemonTeams(),
     getChampionsRoster("Doubles"),
@@ -68,28 +69,6 @@ export default async function PokemonTeamsPage({
           </p>
         </header>
 
-        {feedback.error ? (
-          <p className="mt-6 rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-100">
-            {feedback.error}
-          </p>
-        ) : feedback.saved === "member" ? (
-          <p className="mt-6 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
-            Pokémon added to the next open team slot.
-          </p>
-        ) : feedback.saved === "build" ? (
-          <p className="mt-6 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
-            Pokémon build saved.
-          </p>
-        ) : feedback.saved === "team" ? (
-          <p className="mt-6 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
-            Team details updated.
-          </p>
-        ) : feedback.saved === "deleted" ? (
-          <p className="mt-6 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
-            Team deleted.
-          </p>
-        ) : null}
-
         <section className="mt-10">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -102,7 +81,7 @@ export default async function PokemonTeamsPage({
                 <span className="text-sm text-slate-500">
                   {teams.length} {teams.length === 1 ? "team" : "teams"}
                 </span>
-                <CreateTeamModal initialPokemon={feedback.pokemon} />
+                <CreateTeamModal initialPokemon={initialPokemon} />
               </div>
             </div>
 
@@ -261,15 +240,15 @@ export default async function PokemonTeamsPage({
 
                             return (
                               <div key={member.id} className="space-y-2">
-                              <form action={changeTeamMember} className="flex flex-wrap items-end gap-2 rounded-xl border border-violet-300/10 bg-violet-300/[0.03] p-2">
+                              <TeamActionForm action={changeTeamMember} className="flex flex-wrap items-end gap-2 rounded-xl border border-violet-300/10 bg-violet-300/[0.03] p-2">
                                 <input type="hidden" name="teamId" value={team.id} />
                                 <input type="hidden" name="memberId" value={member.id} />
                                 <input type="hidden" name="role" value={member.role} />
                                 <label className="min-w-0 flex-1 text-[11px] text-slate-500">Change Pokémon<select name="pokemonId" defaultValue={member.pokemonId} className={compactFieldClassName}>{(team.format === "Singles" ? singlesRoster : doublesRoster).map((pokemon) => <option key={pokemon.pokemonId} value={pokemon.pokemonId}>{pokemon.name}</option>)}</select></label>
                                 <button type="submit" className="rounded-lg border border-violet-300/20 px-3 py-2 text-xs font-medium text-violet-200 hover:bg-violet-300/10">Replace</button>
-                              </form>
+                              </TeamActionForm>
                               <PokemonDetailPanel memberId={member.id} name={member.name}>
-                              <form
+                              <TeamActionForm
                                 action={savePokemonBuild}
                                 className="border-t border-white/[0.07] p-3"
                               >
@@ -410,7 +389,7 @@ export default async function PokemonTeamsPage({
                                     Save build
                                   </button>
                                 </div>
-                              </form>
+                              </TeamActionForm>
                               </PokemonDetailPanel>
                               </div>
                             );
