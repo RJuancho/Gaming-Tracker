@@ -1,18 +1,14 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import {
   getChampionsRoster,
   getCurrentChampionsMeta,
 } from "@/integrations/pokemon/champions/provider";
-import {
-  getItemReference,
-  getMoveReference,
-  getPokemonReference,
-} from "@/integrations/pokemon/pokeapi/provider";
+import { getMoveReference } from "@/integrations/pokemon/pokeapi/provider";
 import { listPokemonTeams } from "@/services/pokemon-teams";
 
 import { changeTeamMember, savePokemonBuild } from "./actions";
+import { PokemonItemImage, PokemonSpriteImage } from "../pokemon-asset-image";
 import { CreateTeamModal } from "./create-team-modal";
 import { PokemonRosterPicker } from "./pokemon-roster-picker";
 import { getPokemonTypeColor } from "./pokemon-type-color";
@@ -38,7 +34,6 @@ export default async function PokemonTeamsPage({
     getChampionsRoster("Singles"),
   ]);
   const buildSuggestions = await getBuildSuggestions(teams);
-  const buildVisuals = await getBuildVisuals(teams);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
@@ -122,6 +117,7 @@ export default async function PokemonTeamsPage({
                           teamName={team.name}
                           format={team.format}
                           members={team.members.map((member) => ({
+                            pokemonId: member.pokemonId,
                             name: member.name,
                             role: member.role,
                             heldItem: member.heldItem,
@@ -129,8 +125,6 @@ export default async function PokemonTeamsPage({
                             nature: member.nature,
                             moves: member.moves,
                             statAllocation: member.statAllocation,
-                            pokemonSprite: buildVisuals.get(member.id)?.pokemonSprite ?? null,
-                            heldItemSprite: buildVisuals.get(member.id)?.heldItemSprite ?? null,
                             moveTypes: buildSuggestions.get(`${team.format}:${member.pokemonId}`)?.moveTypes ?? {},
                           }))}
                         />
@@ -151,33 +145,27 @@ export default async function PokemonTeamsPage({
                             {member ? (
                               <PokemonSlotButton memberId={member.id}><div>
                                 <div className="relative mx-auto w-fit">
-                                  {buildVisuals.get(member.id)?.pokemonSprite ? (
-                                    <Image
-                                      src={buildVisuals.get(member.id)!.pokemonSprite!}
-                                      alt={`${member.name} sprite`}
-                                      width={52}
-                                      height={52}
-                                      className="size-12 object-contain [image-rendering:pixelated]"
-                                      unoptimized
-                                    />
-                                  ) : (
-                                    <span className="grid size-9 place-items-center rounded-full bg-violet-300/10 font-mono font-bold text-violet-200">
-                                      {member.name.charAt(0)}
-                                    </span>
-                                  )}
-                                  {member.heldItem &&
-                                  buildVisuals.get(member.id)?.heldItemSprite ? (
+                                  <PokemonSpriteImage
+                                    pokemonId={member.pokemonId}
+                                    name={member.name}
+                                    heldItem={member.heldItem}
+                                    width={52}
+                                    height={52}
+                                    sizes="52px"
+                                    className="size-12 rounded-full object-contain [image-rendering:pixelated]"
+                                  />
+                                  {member.heldItem ? (
                                     <span
                                       className="absolute -bottom-1.5 -right-2 grid size-7 place-items-center rounded-lg border border-amber-200/25 bg-slate-950/95 shadow-lg"
                                       title={normalizeHeldItemName(member.heldItem)}
                                     >
-                                      <Image
-                                        src={buildVisuals.get(member.id)!.heldItemSprite!}
-                                        alt={normalizeHeldItemName(member.heldItem)}
+                                      <PokemonItemImage
+                                        itemId={toPokeApiSlug(member.heldItem)}
+                                        name={normalizeHeldItemName(member.heldItem)}
                                         width={24}
                                         height={24}
+                                        sizes="24px"
                                         className="size-6 object-contain [image-rendering:pixelated]"
-                                        unoptimized
                                       />
                                     </span>
                                   ) : null}
@@ -188,12 +176,6 @@ export default async function PokemonTeamsPage({
                                 <p className="mt-1 text-[10px] text-slate-500">
                                   {member.role}
                                 </p>
-                                {member.heldItem &&
-                                !buildVisuals.get(member.id)?.heldItemSprite ? (
-                                  <p className="mt-1 text-[10px] text-amber-200/80">
-                                    {normalizeHeldItemName(member.heldItem)}
-                                  </p>
-                                ) : null}
                               </div></PokemonSlotButton>
                             ) : (
                               <span className="text-xs text-slate-700">
@@ -263,22 +245,18 @@ export default async function PokemonTeamsPage({
                                   value={member.id}
                                 />
                                 <div className="flex items-center gap-2">
-                                  {buildVisuals.get(member.id)
-                                    ?.heldItemSprite ? (
+                                  {member.heldItem ? (
                                     <span
                                       className="grid size-8 shrink-0 place-items-center rounded-lg border border-amber-200/15 bg-slate-900"
                                       title={member.heldItem ? normalizeHeldItemName(member.heldItem) : undefined}
                                     >
-                                      <Image
-                                        src={
-                                          buildVisuals.get(member.id)!
-                                            .heldItemSprite!
-                                        }
-                                        alt={member.heldItem ? normalizeHeldItemName(member.heldItem) : "Held item"}
+                                      <PokemonItemImage
+                                        itemId={toPokeApiSlug(member.heldItem)}
+                                        name={normalizeHeldItemName(member.heldItem)}
                                         width={26}
                                         height={26}
+                                        sizes="26px"
                                         className="size-6 object-contain [image-rendering:pixelated]"
-                                        unoptimized
                                       />
                                     </span>
                                   ) : null}
@@ -410,7 +388,7 @@ export default async function PokemonTeamsPage({
                             (member) => member.pokemonId,
                           )}
                           synergyNames={team.members.flatMap((member) => buildSuggestions.get(`${team.format}:${member.pokemonId}`)?.teammates.map((choice) => choice.name) ?? [])}
-                          roleSuggestions={Object.fromEntries([...buildSuggestions.entries()].filter(([key]) => key.startsWith(`${team.format}:`)).map(([key, value]) => [key.slice(team.format.length + 1), value.natures.map((choice) => choice.name)]))}
+                          roleSuggestions={{}}
                         />
                       ) : (
                         <p className="mt-5 border-t border-white/10 pt-4 text-xs text-slate-500">
@@ -543,44 +521,6 @@ async function getBuildSuggestions(
   );
 
   return new Map(entries);
-}
-
-type BuildVisual = {
-  pokemonSprite: string | null;
-  heldItemSprite: string | null;
-};
-
-async function getBuildVisuals(
-  teams: Awaited<ReturnType<typeof listPokemonTeams>>,
-) {
-  const entries = await Promise.all(
-    teams.flatMap((team) =>
-      team.members.map(async (member) => {
-        let pokemonSprite: string | null = null;
-        let heldItemSprite: string | null = null;
-
-        try {
-          pokemonSprite = (await getPokemonReference(member.pokemonId)).spriteUrl;
-        } catch {
-          // A form or provider-specific ID may not have a PokéAPI sprite.
-        }
-
-        if (member.heldItem) {
-          try {
-            heldItemSprite = (
-              await getItemReference(toPokeApiSlug(member.heldItem))
-            ).spriteUrl;
-          } catch {
-            // Keep the text item selection when no reference sprite exists.
-          }
-        }
-
-        return [member.id, { pokemonSprite, heldItemSprite }] as const;
-      }),
-    ),
-  );
-
-  return new Map<number, BuildVisual>(entries);
 }
 
 function BuildSelect({

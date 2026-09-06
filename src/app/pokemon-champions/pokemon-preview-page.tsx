@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import {
@@ -10,11 +9,16 @@ import {
   type MetaRanking,
 } from "@/integrations/pokemon/champions/provider";
 import {
-  getItemReference,
+  getPokemonItemSpriteCandidates,
+  getPokemonSpriteCandidates,
+} from "@/integrations/pokemon/assets";
+import {
   getMoveReference,
   getPokemonAvailability,
   getPokemonReference,
 } from "@/integrations/pokemon/pokeapi/provider";
+
+import { PokemonAssetImage, PokemonSpriteImage } from "./pokemon-asset-image";
 
 export const dynamic = "force-dynamic";
 
@@ -111,21 +115,15 @@ export default async function PokemonPreviewPage({ pokemonId }: { pokemonId: str
           </div>
 
           <div className="grid size-40 shrink-0 place-items-center rounded-3xl border border-violet-300/15 bg-violet-300/[0.06]">
-            {reference.spriteUrl ? (
-              <Image
-                src={reference.spriteUrl}
-                alt={`${pokemon.name} game sprite`}
-                width={128}
-                height={128}
-                className="size-32 [image-rendering:pixelated]"
-                priority
-                unoptimized
-              />
-            ) : (
-              <span className="font-mono text-4xl font-bold text-violet-200">
-                {pokemon.name.charAt(0)}
-              </span>
-            )}
+            <PokemonSpriteImage
+              pokemonId={pokemonId}
+              name={pokemon.name}
+              width={128}
+              height={128}
+              sizes="128px"
+              priority
+              className="size-32 rounded-2xl object-contain [image-rendering:pixelated]"
+            />
           </div>
         </header>
 
@@ -346,7 +344,7 @@ function RankingCard({
 }
 
 type RankingVisual = {
-  imageUrl?: string | null;
+  imageSources?: string[];
   moveType?: string;
 };
 
@@ -367,16 +365,16 @@ function RankingImage({
     );
   }
 
-  if (visual?.imageUrl) {
+  if (visual?.imageSources?.length) {
     return (
       <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-white/[0.07] bg-white/[0.05] shadow-inner shadow-white/[0.03]">
-        <Image
-          src={visual.imageUrl}
+        <PokemonAssetImage
+          sources={visual.imageSources}
           alt={name ? `${name} sprite` : "Reference sprite"}
           width={40}
           height={40}
+          sizes="40px"
           className="size-10 object-contain drop-shadow-md [image-rendering:pixelated]"
-          unoptimized
         />
       </span>
     );
@@ -403,12 +401,21 @@ async function getRankingVisuals(rankings: MetaRanking[]) {
         }
 
         if (ranking.category === "held_item") {
-          const item = await getItemReference(slug);
-          return [getVisualKey(ranking), { imageUrl: item.spriteUrl }] as const;
+          return [
+            getVisualKey(ranking),
+            { imageSources: getPokemonItemSpriteCandidates(slug) },
+          ] as const;
         }
 
-        const pokemon = await getPokemonReference(slug);
-        return [getVisualKey(ranking), { imageUrl: pokemon.spriteUrl }] as const;
+        return [
+          getVisualKey(ranking),
+          {
+            imageSources: getPokemonSpriteCandidates(
+              slug,
+              ranking.name ?? slug,
+            ),
+          },
+        ] as const;
       } catch {
         return [getVisualKey(ranking), {}] as const;
       }

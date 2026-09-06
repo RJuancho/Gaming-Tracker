@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { BattleFormat, ChampionsMetaCore, ChampionsRosterPokemon } from "@/integrations/pokemon/champions/provider";
-import { getChampionsSpriteUrl, getShowdownSpriteUrl } from "@/integrations/pokemon/assets";
+
+import { PokemonSpriteImage } from "./pokemon-asset-image";
 
 export function MetaCoresSection({ doublesRoster = [], singlesRoster = [] }: { doublesRoster?: ChampionsRosterPokemon[]; singlesRoster?: ChampionsRosterPokemon[] }) {
   const [format, setFormat] = useState<BattleFormat>("Doubles");
@@ -43,7 +43,7 @@ export function MetaCoresSection({ doublesRoster = [], singlesRoster = [] }: { d
       {loadedFormat !== format && errorFormat !== format ? <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map((item) => <div key={item} className="h-36 animate-pulse rounded-xl border border-white/10 bg-white/[0.04]" />)}</div> : null}
       {errorFormat === format ? <p className="mt-5 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] p-4 text-sm text-rose-200">Current meta core data is temporarily unavailable.</p> : null}
       {loadedFormat === format && cores?.length === 0 ? <p className="mt-5 rounded-xl border border-white/10 p-4 text-sm text-slate-400">No recent team data is available for this format.</p> : null}
-      {loadedFormat === format && cores && cores.length > 0 ? <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{cores.map((core) => <article key={core.members.map((member) => member.pokemonId).join("-")} className="rounded-xl border border-white/10 bg-slate-950/60 p-3 sm:p-4"><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-mono text-xs text-cyan-300">#{core.partnerRank} {anchorPokemon ? "Best partner" : "Popular core"}</span><span className="text-xs text-slate-500">{core.format} · {core.season}</span></div><div className="mt-4 grid grid-cols-2 gap-2">{core.members.map((member) => <Link key={member.pokemonId} href={`/pokemon-champions/pokemon/${member.pokemonId}`} className="flex min-h-24 min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-white/[0.06] p-2 transition active:scale-[0.99] hover:border-violet-300/30"><Image src={getChampionsSpriteUrl(member.name)} alt="" width={48} height={48} className="size-12 object-contain [image-rendering:pixelated]" unoptimized onError={(event) => { event.currentTarget.src = getShowdownSpriteUrl(member.pokemonId); }} /><span className="w-full truncate text-center text-xs text-slate-200">{member.name}</span></Link>)}</div><p className="mt-3 text-xs text-slate-500">Observed teammate rank: #{core.partnerRank}</p></article>)}</div> : null}
+      {loadedFormat === format && cores && cores.length > 0 ? <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{cores.map((core) => <article key={core.members.map((member) => member.pokemonId).join("-")} className="rounded-xl border border-white/10 bg-slate-950/60 p-3 sm:p-4"><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-mono text-xs text-cyan-300">#{core.partnerRank} {anchorPokemon ? "Best partner" : "Popular core"}</span><span className="text-xs text-slate-500">{core.format} · {core.season}</span></div><div className="mt-4 grid grid-cols-2 gap-2">{core.members.map((member) => <Link key={member.pokemonId} href={`/pokemon-champions/pokemon/${member.pokemonId}`} className="flex min-h-24 min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-white/[0.06] p-2 transition active:scale-[0.99] hover:border-violet-300/30"><PokemonSpriteImage pokemonId={member.pokemonId} name={member.name} width={48} height={48} sizes="48px" className="size-12 object-contain [image-rendering:pixelated]" /><span className="w-full truncate text-center text-xs text-slate-200">{member.name}</span></Link>)}</div><p className="mt-3 text-xs text-slate-500">Observed teammate rank: #{core.partnerRank}</p></article>)}</div> : null}
     </section>
   );
 }

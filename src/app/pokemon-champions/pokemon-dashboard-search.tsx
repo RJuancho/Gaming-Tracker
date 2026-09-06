@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import type { ChampionsRosterPokemon } from "@/integrations/pokemon/champions/provider";
 
+import { PokemonSpriteImage } from "./pokemon-asset-image";
 import { getPokemonTypeColor } from "./teams/pokemon-type-color";
 
 export function PokemonDashboardSearch({
@@ -67,24 +68,34 @@ export function PokemonDashboardSearch({
       </label>
 
       <p className="mt-4 text-xs text-slate-500">Showing {matches.length} current {format.toLowerCase()} roster matches.</p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-3 grid grid-cols-2 gap-2 min-[430px]:grid-cols-3 lg:grid-cols-5">
         {matches.map((pokemon) => (
           <Link
             key={pokemon.pokemonId}
             href={`/pokemon-champions/pokemon/${pokemon.pokemonId}`}
-            className="min-h-16 rounded-xl border border-white/[0.08] bg-slate-950/60 p-3 transition active:scale-[0.995] hover:border-violet-300/30 hover:bg-violet-300/[0.06]"
+            className="group grid min-h-40 min-w-0 content-start justify-items-center rounded-xl border border-white/[0.08] bg-slate-950/60 p-3 text-center transition [contain-intrinsic-size:auto_10rem] [content-visibility:auto] active:scale-[0.995] hover:border-violet-300/30 hover:bg-violet-300/[0.06]"
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate font-medium text-slate-200">{pokemon.name}</span>
-              <span className="font-mono text-[10px] text-slate-600">→</span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1">
+            <span className="grid size-20 place-items-center rounded-xl bg-white/[0.025]">
+              <PokemonSpriteImage
+                pokemonId={pokemon.pokemonId}
+                name={pokemon.name}
+                width={72}
+                height={72}
+                sizes="72px"
+                className="size-[4.5rem] object-contain drop-shadow-lg [image-rendering:pixelated]"
+              />
+            </span>
+            <span className="mt-2 flex w-full min-w-0 items-center justify-center gap-1">
+              <span className="truncate text-sm font-medium text-slate-200">{pokemon.name}</span>
+              <span aria-hidden="true" className="shrink-0 font-mono text-[10px] text-slate-600 transition group-hover:text-violet-200">→</span>
+            </span>
+            <span className="mt-2 flex flex-wrap justify-center gap-1">
               {pokemon.types.map((type) => (
                 <span key={type} className={`rounded-md border border-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase ${getPokemonTypeColor(type)}`}>
                   {type}
                 </span>
               ))}
-            </div>
+            </span>
           </Link>
         ))}
       </div>
