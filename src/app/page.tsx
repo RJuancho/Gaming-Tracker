@@ -69,11 +69,11 @@ const games = [
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
+    <main className="relative min-h-screen min-h-dvh overflow-hidden bg-slate-950 text-slate-100">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[46rem] bg-[radial-gradient(circle_at_15%_10%,rgba(34,211,238,0.13),transparent_32%),radial-gradient(circle_at_85%_5%,rgba(168,85,247,0.14),transparent_34%),linear-gradient(to_bottom,rgba(15,23,42,0.15),transparent)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:linear-gradient(to_bottom,black,transparent_55%)]" />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-6 sm:px-10 lg:px-12">
+      <div className="relative mx-auto flex min-h-screen min-h-dvh w-full max-w-6xl flex-col pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-10 sm:py-6 lg:px-12">
         <header className="flex items-center justify-between border-b border-white/10 pb-5">
           <Link
             href="/"
@@ -100,37 +100,37 @@ export default function Home() {
           </a>
         </header>
 
-        <section className="grid gap-12 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)] lg:items-end lg:py-24">
+        <section className="grid gap-9 py-12 sm:gap-12 sm:py-20 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)] lg:items-end lg:py-24">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-1.5 text-xs text-emerald-200">
               <span className="size-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.8)]" />
               Four game spaces ready
             </div>
-            <h1 className="mt-6 text-balance text-5xl font-semibold tracking-[-0.045em] text-white sm:text-6xl lg:text-7xl">
+            <h1 className="mt-5 text-balance text-[clamp(2.5rem,11.5vw,3.75rem)] font-semibold leading-[1.04] tracking-[-0.045em] text-white sm:mt-6 sm:text-6xl sm:leading-[1.05] lg:text-7xl">
               Your games, organized around how you play.
             </h1>
-            <p className="mt-7 max-w-2xl text-pretty text-lg leading-8 text-slate-400 sm:text-xl">
+            <p className="mt-5 max-w-2xl text-pretty text-base leading-7 text-slate-400 sm:mt-7 sm:text-xl sm:leading-8">
               Track personal progress, inspect useful builds, and turn current
               community data into decisions without jumping between scattered
               tools.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-7 grid gap-3 sm:mt-8 sm:flex sm:flex-wrap">
               <a
                 href="#dashboards"
-                className="rounded-xl border border-cyan-200 bg-cyan-300 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:border-white hover:bg-cyan-100 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-cyan-200 bg-cyan-300 px-5 py-3 text-center text-sm font-bold text-slate-950 shadow-lg shadow-cyan-950/30 transition active:scale-[0.99] hover:border-white hover:bg-cyan-100 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200 sm:w-auto"
               >
                 Choose a dashboard ↓
               </a>
               <Link
                 href="/pokemon-champions/teams"
-                className="rounded-xl border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-medium text-slate-200 transition hover:border-violet-300/30 hover:bg-violet-300/[0.08] hover:text-white"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] px-5 py-3 text-center text-sm font-medium text-slate-200 transition active:scale-[0.99] hover:border-violet-300/30 hover:bg-violet-300/[0.08] hover:text-white sm:w-auto"
               >
                 Continue team building →
               </Link>
             </div>
           </div>
 
-          <aside className="rounded-2xl border border-white/10 bg-slate-900/55 p-5 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
+          <aside className="rounded-2xl border border-white/10 bg-slate-900/55 p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <p className="font-mono text-xs uppercase tracking-[0.18em] text-slate-400">
                 Workspace overview
@@ -162,7 +162,7 @@ export default function Home() {
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-cyan-300">
                 Game spaces
               </p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.025em] text-white">
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-white sm:text-3xl">
                 Choose what you want to work on.
               </h2>
             </div>
@@ -178,7 +178,7 @@ export default function Home() {
                 key={game.name}
                 href={game.href}
                 aria-label={game.action}
-                className="group relative min-h-72 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/65 p-6 transition duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-slate-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/60 sm:p-7"
+                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/65 p-5 transition duration-300 active:scale-[0.995] hover:border-white/20 hover:bg-slate-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/60 sm:p-7 md:min-h-72 md:hover:-translate-y-1"
               >
                 <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${game.accent} opacity-80 transition-opacity duration-300 group-hover:opacity-100`} />
                 <div className="pointer-events-none absolute -right-12 -top-16 font-mono text-[11rem] font-black leading-none text-white/[0.025] transition-transform duration-500 group-hover:-translate-x-2 group-hover:translate-y-2">
@@ -216,11 +216,11 @@ export default function Home() {
                     ))}
                   </div>
 
-                  <div className="mt-auto flex items-end justify-between gap-4 pt-7">
+                  <div className="mt-auto flex flex-col items-start gap-2 pt-7 min-[390px]:flex-row min-[390px]:items-end min-[390px]:justify-between min-[390px]:gap-4">
                     <span className="text-[11px] text-slate-600">
                       {game.source}
                     </span>
-                    <span className={`text-sm font-medium transition group-hover:text-white ${game.linkStyle}`}>
+                    <span className={`text-sm font-medium leading-5 transition group-hover:text-white min-[390px]:text-right ${game.linkStyle}`}>
                       {game.action} <span aria-hidden="true">→</span>
                     </span>
                   </div>
